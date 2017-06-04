@@ -30,10 +30,11 @@ from struct import pack
 from colorama import *
 from shutil import copyfileobj
 from threading import Thread
+from tqdm import tqdm
 
 
 class FileBeast:
-    __version__ = '1.3.1'
+    __version__ = '1.3.2'
     enc = ['AES', 'DES3', 'BLOWFISH']
     cmp = ['BZIP', 'GZIP', 'ZLIB']
     arc = ['TAR-GZIP', 'TAR-BZIP', 'TAR']
@@ -407,10 +408,13 @@ class FileBeast:
         @staticmethod
         def fetchfile(url, path):
             try:
-                r = requests.get(url)
-                data = r.content
-                with open(path, "wb") as code:
-                    code.write(data)
+                chunk_size = 1024
+                r = requests.get(url, stream=True)
+                total_size = int(r.headers['content-length'])
+                with open(path, 'wb') as f:
+                    for data in tqdm(iterable=r.iter_content(chunk_size=chunk_size), total=total_size / chunk_size,
+                                     unit='KB'):
+                        f.write(data)
             except Exception, ErrorCode:
                 os.remove(path)
                 FileBeast.error(ErrorCode)
@@ -468,17 +472,21 @@ class FileBeast:
                     elif ans == '4':
                         FileBeast.Interface.Archivemenu()
                     elif ans == '95':
-                        start_time = time.time()
-                        print Fore.LIGHTYELLOW_EX + '[*] Checking for Update...'
-                        version = FileBeast.Updater.checkforupdate()
-                        if version:
-                            print Fore.GREEN + '[+] FileBeast is up to date'
-                            elapsed_time = time.time() - start_time
-                            print Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time
+                        try:
+                            start_time = time.time()
+                            print Fore.LIGHTYELLOW_EX + '[*] Checking for Update...'
+                            version = FileBeast.Updater.checkforupdate()
+                            if version:
+                                print Fore.GREEN + '[+] FileBeast is up to date'
+                                elapsed_time = time.time() - start_time
+                                print Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time
+                                raw_input("Press Enter to continue...")
+                            else:
+                                FileBeast.Updater.update(True)
+                                break
+                        except Exception, ErrorCode:
+                            FileBeast.error(ErrorCode)
                             raw_input("Press Enter to continue...")
-                        else:
-                            FileBeast.Updater.update(True)
-                            break
                     elif ans == '96':
                         FileBeast.showalgs(True)
                     elif ans == '97':

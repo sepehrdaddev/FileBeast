@@ -3,7 +3,7 @@
 ### What is this repository for? ###
 
 * File Beast Python File encrypter
-* ver 1.3.1
+* ver 1.3.2
 
 ### How do I get set up? ###
 
