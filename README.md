@@ -6,6 +6,9 @@ for many purposes such as: backup and security
 It uses __AES,TripleDES and BlowFish__ for Encryption algorithm and __GZIP,BZIP and ZLib__ for Comprssion and 
 __TAR, TAR-GZIP and TAR-BZIP__ for Archiving
 
+<p align="center"><img src="./Pictures/FileBeast.png" alt="The FILEBEAST Project"></p>
+
+
 ### Who is the developer? ###
 
 FileBeast is developed by sepehrdad sh
