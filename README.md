@@ -3,7 +3,7 @@
 # README #
 __FileBeast__ is an open source application used to __Encrypt or Compress__ Files on the local disk
 for many purposes such as: backup and security
-It uses __AES,TripleDES and BlowFish__ for Encryption algorithm and __GZIP,BZIP and ZLib__ for Comprssion and 
+It uses __AES,TripleDES and BlowFish__ for Encryption algorithm and __GZIP,BZIP and ZLib__ for Compression and 
 __TAR, TAR-GZIP and TAR-BZIP__ for Archiving
 
 <p align="center"><img src="./Pictures/FileBeast.png" alt="The FILEBEAST Project"></p>
@@ -21,14 +21,15 @@ FileBeast is developed by sepehrdad sh
 ### How do I get set up? ###
 # A) #
 1)  Download ZipFile from : https://github.com/sepehrdaddev/FileBeast/archive/master.zip and extract it or 
-    Run "git clone https://github.com/sepehrdaddev/FileBeast.git" in the shell
+    Run `git clone https://github.com/sepehrdaddev/FileBeast.git` in the shell
 2)  Install python 2.7
-3)  Run pip install -r requirements.txt in shell
-4)  Run python FileBeast.py in shell
+3)  Run `pip install -r requirements.txt` in shell
+4)  Run `python FileBeast.py` in shell
 # B) #
 1)  Download standalone from : https://github.com/sepehrdaddev/FileBeast/releases and extract it
 
 ### Usage ###
+
 ```
 [*] Usage : FileBeast -i <inputfile> -m <method> -a <algorithm> -p <password>/-l <level> -o <outputfile> -d
                 -h                      display help
@@ -74,6 +75,7 @@ FileBeast is developed by sepehrdad sh
 [*] Example : FileBeast -i test.tar.gz -m decompress -a tar-gzip -O test/
 
 ```
+
 ### How to Compile ###
 
 ## Using pyinstaller
