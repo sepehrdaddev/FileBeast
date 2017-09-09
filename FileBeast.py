@@ -1,1255 +1,11 @@
-#!/usr/bin/python
-##############################################################################
-#                                                                            #
-#                               By Sepehrdad Sh                              #
-#                                                                            #
-##############################################################################
-
-
 import os
-import os.path
-import sys
-import random
-import getopt
-import bz2
-import gzip
-import zlib
-import tarfile
 import time
-import base64
-import getpass
-import hashlib
-import requests
-import subprocess
-from Crypto.Cipher import AES
-from Crypto.Cipher import DES3
-from Crypto.Hash import SHA256
-from Crypto.Hash import MD5
-from Crypto.Cipher import _Blowfish
-from struct import pack
 from colorama import *
-from shutil import copyfileobj
-from threading import Thread
-from tqdm import tqdm
+from Crypto import Random
 
-
-class FileBeast:
-    __version__ = '1.3.2'
-    enc = ['AES', 'DES3', 'BLOWFISH']
-    cmp = ['BZIP', 'GZIP', 'ZLIB']
-    arc = ['TAR-GZIP', 'TAR-BZIP', 'TAR']
-    rm = False
-    urls = {'version': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/version',
-            'win32': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Windows/FileBeast.exe',
-            'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/FileBeast'}
-    checksums = {'win32': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Windows/checksum',
-                 'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/checksum'}
-
-    class Compress:
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def bzip(InFilePath, OutFilePath, Level):
-            try:
-                with open(InFilePath, 'rb') as Input:
-                    with bz2.BZ2File(OutFilePath, 'wb', Level) as Output:
-                        copyfileobj(Input, Output)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def gzip(InFilePath, OutFilePath, Level):
-            try:
-                with open(InFilePath, 'rb') as Input:
-                    with gzip.GzipFile(OutFilePath, 'wb', Level) as Output:
-                        copyfileobj(Input, Output)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def zlib(InFilePath, OutFilePath, Level):
-            try:
-                compressor = zlib.compressobj(Level)
-                Input = file(InFilePath, 'r')
-                Output = file(OutFilePath, 'w')
-                block = Input.read(2048)
-                while block:
-                    cBlock = compressor.compress(block)
-                    Output.write(cBlock)
-                    block = Input.read(2048)
-                cBlock = compressor.flush()
-                Output.write(cBlock)
-                Input.close()
-                Output.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-        @staticmethod
-        def tarFile(InFilePath, OutFilePath, Mode):
-            try:
-                tFile = tarfile.open(OutFilePath, Mode)
-                tFile.add(InFilePath)
-                tFile.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def tarDirectory(InDirectory, OutFilePath, Mode):
-            try:
-                Files = FileBeast.Handler.HandleDirectory(InDirectory)
-                tFile = tarfile.open(OutFilePath, Mode)
-                for filename in Files:
-                    tFile.add(filename)
-                tFile.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-    class Decompress:
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def bzip(InFilePath, OutFilePath):
-            try:
-                with bz2.BZ2File(InFilePath, 'rb') as Input:
-                    with open(OutFilePath, 'wb') as Output:
-                        copyfileobj(Input, Output)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def gzip(InFilePath, OutFilePath):
-            try:
-                with gzip.GzipFile(InFilePath, 'rb') as Input:
-                    with open(OutFilePath, 'wb') as Output:
-                        copyfileobj(Input, Output)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def zlib(InFilePath, OutFilePath):
-            try:
-                decompressor = zlib.decompressobj()
-                Input = file(InFilePath, 'r')
-                Output = file(OutFilePath, 'w')
-                block = Input.read(2048)
-                while block:
-                    cBlock = decompressor.decompress(block)
-                    Output.write(cBlock)
-                    block = Input.read(2048)
-                cBlock = decompressor.flush()
-                Output.write(cBlock)
-                Input.close()
-                Output.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def tar(InFilePath, OutDirectory):
-            try:
-                tFile = tarfile.open(InFilePath, 'r')
-                tFile.extractall(OutDirectory)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-    class Hash:
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def sha256(password):
-            hasher = SHA256.new(password)
-            return hasher.digest()
-
-        @staticmethod
-        def md5(password):
-            hasher = MD5.new(password)
-            return hasher.digest()
-
-    class Encode:
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def base64(password):
-            encoder = base64.b64encode(password)
-            return encoder
-
-        @staticmethod
-        def reversebytes(data):
-            data_size = 0
-            for n in data:
-                data_size += 1
-            reversedbytes = bytearray()
-            i = 0
-            for x in range(0, data_size / 4):
-                a = (data[i:i + 4])
-                i += 4
-                z = 0
-                n0 = a[z]
-                n1 = a[z + 1]
-                n2 = a[z + 2]
-                n3 = a[z + 3]
-                reversedbytes.append(n3)
-                reversedbytes.append(n2)
-                reversedbytes.append(n1)
-                reversedbytes.append(n0)
-            return buffer(reversedbytes)
-
-    class Encrypt:
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def aes(InFilePath, OutFilePath, key):
-            try:
-                chunksize = 64 * 1024
-                filesize = str(os.path.getsize(InFilePath)).zfill(16)
-                IV = ''
-                for i in range(16):
-                    IV += chr(random.randint(0, 0xFF))
-                encryptor = AES.new(key, AES.MODE_CBC, IV)
-                with open(InFilePath, 'rb') as infile:
-                    with open(OutFilePath, 'wb') as outputFile:
-                        outputFile.write(filesize)
-                        outputFile.write(IV)
-                        while 1:
-                            chunk = infile.read(chunksize)
-                            if len(chunk) == 0:
-                                break
-                            elif len(chunk) % 16 != 0:
-                                chunk += ' ' * (16 - (len(chunk) % 16))
-                            outputFile.write(encryptor.encrypt(chunk))
-                        outputFile.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def des3(InFilePath, OutFilePath, key):
-            try:
-                chunksize = 64 * 1024
-                filesize = str(os.path.getsize(InFilePath)).zfill(16)
-                IV = ''
-                for i in range(8):
-                    IV += chr(random.randint(0, 0xFF))
-                encryptor = DES3.new(key, DES3.MODE_CBC, IV)
-                with open(InFilePath, 'rb') as infile:
-                    with open(OutFilePath, 'wb') as outputFile:
-                        outputFile.write(filesize)
-                        outputFile.write(IV)
-                        while 1:
-                            chunk = infile.read(chunksize)
-                            if len(chunk) == 0:
-                                break
-                            elif len(chunk) % 16 != 0:
-                                chunk += ' ' * (16 - (len(chunk) % 16))
-                            outputFile.write(encryptor.encrypt(chunk))
-                        outputFile.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def blowfish(InFilePath, OutFilePath, key):
-            try:
-                size = os.path.getsize(InFilePath)
-                infile = open(InFilePath, 'rb')
-                outfile = open(OutFilePath, 'wb')
-                data = infile.read()
-                infile.close()
-                if size % 8 > 0:
-                    extra = 8 - (size % 8)
-                    padding = [0] * extra
-                    padding = pack('b' * extra, *padding)
-                    data += padding
-                revdata = FileBeast.Encode.reversebytes(data)
-                encrypted_data = _Blowfish.new(key, _Blowfish.MODE_ECB).encrypt(revdata)
-                finaldata = FileBeast.Encode.reversebytes(encrypted_data)
-                outfile.write(finaldata)
-                outfile.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-    class Decrypt:
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def aes(InFilePath, OutFilePath, key):
-            try:
-                chunksize = 64 * 1024
-                with open(InFilePath, 'rb') as infile:
-                    filesize = long(infile.read(16))
-                    IV = infile.read(16)
-                    decryptor = AES.new(key, AES.MODE_CBC, IV)
-                    with open(OutFilePath, 'wb') as outputfile:
-                        while 1:
-                            chunk = infile.read(chunksize)
-                            if len(chunk) == 0:
-                                break
-                            outputfile.write(decryptor.decrypt(chunk))
-                        outputfile.truncate(filesize)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def des3(InFilePath, OutFilePath, key):
-            try:
-                chunksize = 64 * 1024
-                with open(InFilePath, 'rb') as infile:
-                    filesize = long(infile.read(16))
-                    IV = infile.read(8)
-                    decryptor = DES3.new(key, DES3.MODE_CBC, IV)
-                    with open(OutFilePath, 'wb') as outputfile:
-                        while 1:
-                            chunk = infile.read(chunksize)
-                            if len(chunk) == 0:
-                                break
-                            outputfile.write(decryptor.decrypt(chunk))
-                        outputfile.truncate(filesize)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def blowfish(InFilePath, OutFilePath, key):
-            try:
-                infile = open(InFilePath, 'rb')
-                outfile = open(OutFilePath, 'wb')
-                data = infile.read()
-                infile.close()
-                revdata = FileBeast.Encode.reversebytes(data)
-                decrypted_data = _Blowfish.new(key, _Blowfish.MODE_ECB).decrypt(revdata)
-                finaldata = FileBeast.Encode.reversebytes(decrypted_data)
-                end = len(finaldata) - 1
-                while str(finaldata[end]).encode('hex') == '00':
-                    end -= 1
-                finaldata = finaldata[0:end]
-                outfile.write(finaldata)
-                outfile.close()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-    class Updater:
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def checkforupdate():
-            try:
-                version = FileBeast.Updater.fetchurl(FileBeast.urls['version'])
-                if FileBeast.__version__ == version:
-                    return True
-                else:
-                    return False
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def update(show):
-            try:
-                start_time = time.time()
-                if show:
-                    pass
-                else:
-                    print Fore.LIGHTYELLOW_EX + '[*] Checking for Update...'
-                version = FileBeast.Updater.checkforupdate()
-                if version:
-                    print Fore.GREEN + '[+] FileBeast is up to date'
-                else:
-                    print Fore.LIGHTYELLOW_EX + '[*] Updating FileBeast...'
-                    if os.name in ('nt', 'dos'):
-                        checksum = FileBeast.Updater.fetchurl(FileBeast.checksums['win32'])
-                        latestfile = 'latest.exe'
-                        FileBeast.Updater.fetchfile(FileBeast.urls['win32'], latestfile)
-                        if FileBeast.Updater.getchecksum(latestfile) == checksum:
-                            cmd = 'ping 127.0.0.1 -n 2 > nul'
-                            cmd += ' && del %s && rename %s FileBeast.exe' % (sys.argv[0], latestfile)
-                            subprocess.Popen(cmd, shell=True)
-                        else:
-                            print Fore.RED + '[-] Error while updating please try again'
-                            os.remove(os.path.realpath(latestfile))
-                            if show:
-                                raw_input("Press Enter to continue...")
-                    elif os.name in ('linux', 'posix'):
-                        checksum = FileBeast.Updater.fetchurl(FileBeast.checksums['linux'])
-                        latestfile = 'latest'
-                        FileBeast.Updater.fetchfile(FileBeast.urls['linux'], latestfile)
-                        if FileBeast.Updater.getchecksum(latestfile) == checksum:
-                            cmd = 'ping 127.0.0.1 -c 2 >> /dev/null'
-                            cmd += ' && rm -rf %s && mv %s FileBeast' % (sys.argv[0], latestfile)
-                            cmd += ' && chmod +x FileBeast'
-                            subprocess.Popen(cmd, shell=True)
-                        else:
-                            print Fore.RED + '[-] Error while updating please try again'
-                            os.remove(os.path.realpath(latestfile))
-                            if show:
-                                raw_input("Press Enter to continue...")
-                    else:
-                        print Fore.RED + '[-] Unsupported OS'
-                        print Fore.LIGHTYELLOW_EX + 'Please visit https://github.com/sepehrdaddev/FileBeast'
-                        elapsed_time = time.time() - start_time
-                        print Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time
-                        if show:
-                            raw_input("Press Enter to continue...")
-                        else:
-                            sys.exit()
-                print Fore.GREEN + '[+] Successfully Updated...'
-                elapsed_time = time.time() - start_time
-                print Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def fetchurl(url):
-            try:
-                return requests.get(url).content.rstrip()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def fetchfile(url, path):
-            try:
-                chunk_size = 1024
-                r = requests.get(url, stream=True)
-                total_size = int(r.headers['content-length'])
-                with open(path, 'wb') as f:
-                    for data in tqdm(iterable=r.iter_content(chunk_size=chunk_size), total=total_size / chunk_size,
-                                     unit='KB'):
-                        f.write(data)
-            except Exception, ErrorCode:
-                os.remove(path)
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def getchecksum(infile):
-            try:
-                BUF_SIZE = 65536
-                sha256 = hashlib.sha256()
-                with open(infile, 'rb') as f:
-                    while True:
-                        data = f.read(BUF_SIZE)
-                        if not data:
-                            break
-                        sha256.update(data)
-                return sha256.hexdigest()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-    class Interface:
-
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def Mainmenu():
-            ans = None
-            while 1:
-                try:
-                    menu = [
-                        'Encrypt',
-                        'Decrypt',
-                        'Compress',
-                        'Decompress',
-                        'Archive'
-                    ]
-                    FileBeast.banner()
-                    print Fore.RESET + 'Select from menu: \n'
-                    for i in menu:
-                        print ' [%s] %s' % (menu.index(i), i)
-                    print '\n [95] Update FileBeast'
-                    print ' [96] Display Supported Algorithms'
-                    print ' [97] Display Help'
-                    print ' [98] Display Version'
-                    print ' [99] Exit\n'
-                    ans = raw_input(Fore.RED + "FileBeast>")
-                    if ans == '0':
-                        FileBeast.Interface.Encryptmenu()
-                    elif ans == '1':
-                        FileBeast.Interface.Decryptmenu()
-                    elif ans == '2':
-                        FileBeast.Interface.Compressmenu()
-                    elif ans == '3':
-                        FileBeast.Interface.Decompressmenu()
-                    elif ans == '4':
-                        FileBeast.Interface.Archivemenu()
-                    elif ans == '95':
-                        try:
-                            start_time = time.time()
-                            print Fore.LIGHTYELLOW_EX + '[*] Checking for Update...'
-                            version = FileBeast.Updater.checkforupdate()
-                            if version:
-                                print Fore.GREEN + '[+] FileBeast is up to date'
-                                elapsed_time = time.time() - start_time
-                                print Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time
-                                raw_input("Press Enter to continue...")
-                            else:
-                                FileBeast.Updater.update(True)
-                                break
-                        except Exception, ErrorCode:
-                            FileBeast.error(ErrorCode)
-                            raw_input("Press Enter to continue...")
-                    elif ans == '96':
-                        FileBeast.showalgs(True)
-                    elif ans == '97':
-                        FileBeast.usage(True)
-                    elif ans == '98':
-                        FileBeast.version(True)
-                    elif ans == '99':
-                        break
-                    else:
-                        FileBeast.invalid(False)
-                except:
-                    continue
-            sys.exit()
-
-        @staticmethod
-        def Encryptmenu():
-            alg = ''
-            infile = ''
-            outfile = ''
-            passwd = ''
-            try:
-                while 1:
-                    try:
-                        print 'Select encryption algorithm: \n'
-                        for i in FileBeast.enc:
-                            print ' [%s] %s' % (FileBeast.enc.index(i), i)
-                        print ' [99] Back to Main menu\n'
-                        ans = raw_input(Fore.RED + "FileBeast(Encrypt)>")
-                        try:
-                            ans = int(ans)
-                        except:
-                            FileBeast.invalid(False)
-                        if ans == 99:
-                            break
-                        elif FileBeast.enc[ans]:
-                            alg = FileBeast.enc[ans]
-                            while 1:
-                                try:
-                                    print('Input file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Encrypt)>")
-                                    if os.path.isfile(ans):
-                                        infile = ans
-                                        break
-                                    else:
-                                        print Fore.RED + '[-] File %s not found' % ans
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    print('Output file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Encrypt)>")
-                                    outfile = ans
-                                    break
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    passwd = getpass.getpass('Password: ')
-                                    break
-                                except:
-                                    continue
-                            break
-                        else:
-                            FileBeast.invalid(False)
-                    except:
-                        continue
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-            if alg == 'AES':
-                passwd = FileBeast.Hash.sha256(passwd)
-                FileBeast.Handler.HandleOperation(FileBeast.Encrypt.aes, [infile, outfile, passwd],
-                                                  ['Encrypt', infile, alg], True)
-            elif alg == 'DES3':
-                passwd = FileBeast.Hash.md5(passwd)
-                FileBeast.Handler.HandleOperation(FileBeast.Encrypt.des3, [infile, outfile, passwd],
-                                                  ['Encrypt', infile, alg], True)
-            elif alg == 'BLOWFISH':
-                passwd = FileBeast.Hash.sha256(passwd)
-                FileBeast.Handler.HandleOperation(FileBeast.Encrypt.blowfish, [infile, outfile, passwd],
-                                                  ['Encrypt', infile, alg], True)
-            else:
-                sys.exit()
-
-        @staticmethod
-        def Decryptmenu():
-            alg = ''
-            infile = ''
-            outfile = ''
-            passwd = ''
-            try:
-                while 1:
-                    try:
-                        print 'Select encryption algorithm: \n'
-                        for i in FileBeast.enc:
-                            print ' [%s] %s' % (FileBeast.enc.index(i), i)
-                        print ' [99] Back to Main menu\n'
-                        ans = raw_input(Fore.RED + "FileBeast(Decrypt)>")
-                        try:
-                            ans = int(ans)
-                        except:
-                            FileBeast.invalid(False)
-                        if ans == 99:
-                            break
-                        elif FileBeast.enc[ans]:
-                            alg = FileBeast.enc[ans]
-                            while 1:
-                                try:
-                                    print('Input file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Decrypt)>")
-                                    if os.path.isfile(ans):
-                                        infile = ans
-                                        break
-                                    else:
-                                        print Fore.RED + '[-] File %s not found' % ans
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    print('Output file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Decrypt)>")
-                                    outfile = ans
-                                    break
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    passwd = getpass.getpass('Password: ')
-                                    break
-                                except:
-                                    continue
-                            break
-                        else:
-                            FileBeast.invalid(False)
-                    except:
-                        continue
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-            if alg == 'AES':
-                passwd = FileBeast.Hash.sha256(passwd)
-                FileBeast.Handler.HandleOperation(FileBeast.Decrypt.aes, [infile, outfile, passwd],
-                                                  ['Decrypt', infile, alg], True)
-            elif alg == 'DES3':
-                passwd = FileBeast.Hash.md5(passwd)
-                FileBeast.Handler.HandleOperation(FileBeast.Decrypt.des3, [infile, outfile, passwd],
-                                                  ['Decrypt', infile, alg], True)
-            elif alg == 'BLOWFISH':
-                passwd = FileBeast.Hash.sha256(passwd)
-                FileBeast.Handler.HandleOperation(FileBeast.Decrypt.blowfish, [infile, outfile, passwd],
-                                                  ['Decrypt', infile, alg], True)
-            else:
-                sys.exit()
-
-        @staticmethod
-        def Compressmenu():
-            alg = ''
-            infile = ''
-            outfile = ''
-            level = -1
-            try:
-                while 1:
-                    try:
-                        print('Select compression algorithm: \n')
-                        for i in FileBeast.cmp:
-                            print ' [%s] %s' % (FileBeast.cmp.index(i), i)
-                        print(' [99] Back to Main menu\n')
-                        ans = raw_input(Fore.RED + "FileBeast(Compress)>")
-                        try:
-                            ans = int(ans)
-                        except:
-                            FileBeast.invalid(False)
-                        if ans == 99:
-                            break
-                        elif FileBeast.cmp[ans]:
-                            alg = FileBeast.cmp[ans]
-                            while 1:
-                                try:
-                                    print('Input file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Compress)>")
-                                    if os.path.isfile(ans):
-                                        infile = ans
-                                        break
-                                    else:
-                                        print Fore.RED + '[-] File %s not found' % ans
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    print('Output file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Compress)>")
-                                    outfile = ans
-                                    break
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    ans = raw_input('Compression level(0 to 9): ')
-                                    try:
-                                        level = int(ans)
-                                    except:
-                                        print Fore.RED + '[-] %s is not a valid number' % ans
-                                    if level in (range(0, 10)):
-                                        break
-                                    else:
-                                        print Fore.RED + '[-] Compression level %s is invalid' % ans
-                                except:
-                                    continue
-                            break
-                        else:
-                            FileBeast.invalid(False)
-                    except:
-                        continue
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-            if alg == 'BZIP':
-                FileBeast.Handler.HandleOperation(FileBeast.Compress.bzip, [infile, outfile, level],
-                                                  ['Compress', infile, alg], True)
-            elif alg == 'GZIP':
-                FileBeast.Handler.HandleOperation(FileBeast.Compress.gzip, [infile, outfile, level],
-                                                  ['Compress', infile, alg], True)
-            elif alg == 'ZLIB':
-                FileBeast.Handler.HandleOperation(FileBeast.Compress.zlib, [infile, outfile, level],
-                                                  ['Compress', infile, alg], True)
-            else:
-                sys.exit()
-
-        @staticmethod
-        def Decompressmenu():
-            infile = ''
-            outfile = ''
-            alg = ''
-            outdirectory = ''
-            try:
-                while 1:
-                    try:
-                        print('Select compression algorithm: \n')
-                        for i in FileBeast.cmp:
-                            print ' [%s] %s' % (FileBeast.cmp.index(i), i)
-                        print(' [99] Back to Main menu\n')
-                        ans = raw_input(Fore.RED + "FileBeast(Decompress)>")
-                        try:
-                            ans = int(ans)
-                        except:
-                            FileBeast.invalid(False)
-                        if ans == 99:
-                            break
-                        elif FileBeast.cmp[ans]:
-                            alg = FileBeast.cmp[ans]
-                            while 1:
-                                try:
-                                    print('Input file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Decompress)>")
-                                    if os.path.isfile(ans):
-                                        infile = ans
-                                        break
-                                    else:
-                                        print Fore.RED + '[-] File %s not found' % ans
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    if tarfile.is_tarfile(infile):
-                                        print('Output directory path: \n')
-                                        ans = raw_input(Fore.RED + "FileBeast(Decompress)>")
-                                        outdirectory = ans
-                                        break
-                                    else:
-                                        print('Output file path: \n')
-                                        ans = raw_input(Fore.RED + "FileBeast(Decompress)>")
-                                        outfile = ans
-                                        break
-                                except:
-                                    continue
-                            break
-                        else:
-                            FileBeast.invalid(False)
-                    except:
-                        continue
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-            if tarfile.is_tarfile(infile):
-                FileBeast.Handler.HandleOperation(FileBeast.Decompress.tar, [infile, outdirectory],
-                                                  ['Decompress', infile, 'TAR'], True)
-            elif alg == 'BZIP':
-                FileBeast.Handler.HandleOperation(FileBeast.Decompress.bzip, [infile, outfile],
-                                                  ['Decompress', infile, alg], True)
-            elif alg == 'GZIP':
-                FileBeast.Handler.HandleOperation(FileBeast.Decompress.gzip, [infile, outfile],
-                                                  ['Decompress', infile, alg], True)
-            elif alg == 'ZLIB':
-                FileBeast.Handler.HandleOperation(FileBeast.Decompress.zlib, [infile, outfile],
-                                                  ['Decompress', infile, alg], True)
-            else:
-                sys.exit()
-
-        @staticmethod
-        def Archivemenu():
-            alg = ''
-            indirectory = ''
-            infile = ''
-            outfile = ''
-            try:
-                while 1:
-                    try:
-                        print('Select archiving algorithm: \n')
-                        for i in FileBeast.arc:
-                            print ' [%s] %s' % (FileBeast.arc.index(i), i)
-                        print(' [99] Back to Main menu\n')
-                        ans = raw_input(Fore.RED + "FileBeast(Archive)>")
-                        try:
-                            ans = int(ans)
-                        except:
-                            FileBeast.invalid(False)
-                        if ans == 99:
-                            break
-                        elif FileBeast.arc[ans]:
-                            alg = FileBeast.arc[ans]
-                            while 1:
-                                try:
-                                    print('Input file/directory path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Archive)>")
-                                    if os.path.isdir(ans):
-                                        indirectory = ans
-                                        break
-                                    elif os.path.isfile(ans):
-                                        infile = ans
-                                        break
-                                    else:
-                                        print Fore.RED + '[-] Directory %s not found' % ans
-                                except:
-                                    continue
-                            while 1:
-                                try:
-                                    print('Output file path: \n')
-                                    ans = raw_input(Fore.RED + "FileBeast(Archive)>")
-                                    outfile = ans
-                                    break
-                                except:
-                                    continue
-                            break
-                        else:
-                            FileBeast.invalid(False)
-                    except:
-                        continue
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-            if infile != '':
-                if alg == 'TAR-GZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.tarFile,
-                                                          [infile, outfile, 'w:gz'],
-                                                          ['Archiv', infile, alg], True)
-                elif alg == 'TAR-BZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.tarFile,
-                                                          [infile, outfile, 'w:bz2'],
-                                                          ['Archiv', infile, alg], True)
-                elif alg == 'TAR':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.tarFile,
-                                                          [infile, outfile, 'w'],
-                                                          ['Archiv', infile, alg], True)
-                else:
-                    sys.exit()
-            elif indirectory != '':
-                if alg == 'TAR-GZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.tarDirectory,
-                                                          [indirectory, outfile, 'w:gz'],
-                                                          ['Archiv', indirectory, alg], True)
-                elif alg == 'TAR-BZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.tarDirectory,
-                                                          [indirectory, outfile, 'w:bz2'],
-                                                          ['Archiv', indirectory, alg], True)
-                elif alg == 'TAR':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.tarDirectory,
-                                                          [indirectory, outfile, 'w'],
-                                                          ['Archiv', indirectory, alg], True)
-                else:
-                    sys.exit()
-
-    class Handler:
-
-        def __init__(self):
-            pass
-
-        @staticmethod
-        def HandleOperation(operation, arg, information, show):
-            try:
-                start_time = time.time()
-                print Fore.LIGHTYELLOW_EX + '[*] %sing %s with %s algorithm... ' % (
-                information[0], information[1], information[2]),
-                sys.stdout.flush()
-                i = 0
-                OperationThread = Thread(target=operation, args=arg)
-                OperationThread.daemon = True
-                OperationThread.start()
-                while OperationThread.is_alive():
-                    if (i % 4) == 0:
-                        sys.stdout.write('\b/')
-                    elif (i % 4) == 1:
-                        sys.stdout.write('\b-')
-                    elif (i % 4) == 2:
-                        sys.stdout.write('\b\\')
-                    elif (i % 4) == 3:
-                        sys.stdout.write('\b|')
-                    sys.stdout.flush()
-                    time.sleep(0.1)
-                    i += 1
-                sys.stdout.write('\b')
-                print Fore.GREEN + '\n[+] Successfully %sed...' % information[0]
-                elapsed_time = time.time() - start_time
-                while 1:
-                    if show:
-                        try:
-                            ans = raw_input('Delete original file/directory [y/n/default=n]')
-                            if ans == 'y':
-                                FileBeast.rm = True
-                                break
-                            elif ans == 'n':
-                                FileBeast.rm = False
-                                break
-                            elif ans == '':
-                                FileBeast.rm = False
-                                break
-                            else:
-                                FileBeast.invalid(False)
-                        except:
-                            continue
-                    else:
-                        break
-                if FileBeast.rm:
-                    print Fore.LIGHTYELLOW_EX + '[*] Deleting %s ' % information[1]
-                    FileBeast.Handler.HandleDeletion(information[1])
-                    print Fore.GREEN + '[+] Successfully Deleted %s ' % information[1]
-                print Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time
-                if show:
-                    raw_input("Press Enter to continue...")
-                else:
-                    sys.exit()
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def HandleDirectory(path):
-            try:
-                for (dirpath, _, filenames) in os.walk(path):
-                    for filename in filenames:
-                        yield os.path.join(dirpath, filename)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def HandleDeletion(path):
-            try:
-                if os.path.isfile(path):
-                    os.remove(path)
-                elif os.path.isdir(path):
-                    for root, dirs, files in os.walk(path, topdown=False):
-                        for name in files:
-                            os.remove(os.path.join(root, name))
-                        for name in dirs:
-                            os.rmdir(os.path.join(root, name))
-                    os.rmdir(path)
-            except Exception, ErrorCode:
-                FileBeast.error(ErrorCode)
-
-        @staticmethod
-        def HandleArgs(argv):
-            opts, args = getopt.getopt(argv, 'hvusi:o:I:O:m:a:p:l:d')
-            infile = ''
-            outfile = ''
-            indirectory = ''
-            outdirectory = ''
-            alg = ''
-            passwd = ''
-            level = -1
-            stat = ''
-            for opt, arg in opts:
-                if opt == '-h':
-                    FileBeast.usage(False)
-                elif opt == '-v':
-                    FileBeast.version(False)
-                elif opt == '-u':
-                    FileBeast.Updater.update(False)
-                    sys.exit()
-                elif opt == '-s':
-                    FileBeast.showalgs(False)
-                    sys.exit()
-                elif opt == '-i':
-                    if os.path.isfile(arg):
-                        infile = arg
-                    else:
-                        print Fore.RED + '[-] File %s not found' % arg
-                        sys.exit()
-                elif opt == '-o':
-                    outfile = arg
-                elif opt == '-I':
-                    if os.path.isdir(arg):
-                        indirectory = arg
-                    else:
-                        print Fore.RED + '[-] Directory %s not found' % arg
-                        sys.exit()
-                elif opt == '-O':
-                    outdirectory = arg
-                elif opt == '-m':
-                    if arg in ('encrypt', 'decrypt', 'compress', 'decompress', 'archive'):
-                        stat = arg
-                    else:
-                        print Fore.RED + '[-] Method %s not found' % arg
-                        sys.exit()
-                elif opt == '-a':
-                    arg = arg.upper()
-                    if stat in ('encrypt', 'decrypt'):
-                        if arg in FileBeast.enc:
-                            alg = arg
-                        else:
-                            print Fore.RED + '[-] Encryption algorithm %s not found' % arg
-                            sys.exit()
-                    elif stat == 'compress':
-                        if arg in FileBeast.cmp:
-                            alg = arg
-                        else:
-                            print Fore.RED + '[-] Compression algorithm %s not found' % arg
-                            sys.exit()
-                    elif stat == 'decompress':
-                        if arg in FileBeast.cmp:
-                            alg = arg
-                        elif arg in FileBeast.arc:
-                            alg = arg
-                        else:
-                            print Fore.RED + '[-] Compression algorithm %s not found' % arg
-                            sys.exit()
-                    elif stat == 'archive':
-                        if arg in FileBeast.arc:
-                            alg = arg
-                        else:
-                            print Fore.RED + '[-] Archiving algorithm %s not found' % arg
-                            sys.exit()
-                    else:
-                        FileBeast.invalid(True)
-                elif opt == '-p':
-                    passwd = arg
-                elif opt == '-l':
-                    try:
-                        level = int(arg)
-                    except:
-                        print Fore.RED + '[-] %s is not a valid number' % arg
-                        sys.exit()
-                    if level in (range(0, 10)):
-                        pass
-                    else:
-                        print Fore.RED + '[-] Compression level %s is invalid' % arg
-                        sys.exit()
-                elif opt == '-d':
-                    FileBeast.rm = True
-                else:
-                    FileBeast.usage(False)
-            if stat == 'encrypt':
-                if infile == '':
-                    print Fore.RED + '[-] No input file specified'
-                    sys.exit()
-                elif outfile == '':
-                    print Fore.RED + '[-] No output file specified'
-                    sys.exit()
-                elif passwd == '':
-                    print Fore.RED + '[-] No password specified'
-                    sys.exit()
-                elif level != -1 or indirectory != '' or outdirectory != '':
-                    FileBeast.invalid(True)
-                if alg == 'AES':
-                    passwd = FileBeast.Hash.sha256(passwd)
-                    FileBeast.Handler.HandleOperation(FileBeast.Encrypt.aes, [infile, outfile, passwd],
-                                                      ['Encrypt', infile, alg], False)
-                elif alg == 'DES3':
-                    passwd = FileBeast.Hash.md5(passwd)
-                    FileBeast.Handler.HandleOperation(FileBeast.Encrypt.des3, [infile, outfile, passwd],
-                                                      ['Encrypt', infile, alg], False)
-                elif alg == 'BLOWFISH':
-                    passwd = FileBeast.Hash.sha256(passwd)
-                    FileBeast.Handler.HandleOperation(FileBeast.Encrypt.blowfish, [infile, outfile, passwd],
-                                                      ['Encrypt', infile, alg], False)
-                else:
-                    print Fore.RED + '[-] No algorithm specified'
-                    sys.exit()
-            elif stat == 'decrypt':
-                if infile == '':
-                    print Fore.RED + '[-] No input file specified'
-                    sys.exit()
-                elif outfile == '':
-                    print Fore.RED + '[-] No output file specified'
-                    sys.exit()
-                elif passwd == '':
-                    print Fore.RED + '[-] No password specified'
-                    sys.exit()
-                elif level != -1 or indirectory != '' or outdirectory != '':
-                    FileBeast.invalid(True)
-                if alg == 'AES':
-                    passwd = FileBeast.Hash.sha256(passwd)
-                    FileBeast.Handler.HandleOperation(FileBeast.Decrypt.aes, [infile, outfile, passwd],
-                                                      ['Decrypt', infile, alg], False)
-                elif alg == 'DES3':
-                    passwd = FileBeast.Hash.md5(passwd)
-                    FileBeast.Handler.HandleOperation(FileBeast.Decrypt.des3, [infile, outfile, passwd],
-                                                      ['Decrypt', infile, alg], False)
-                elif alg == 'BLOWFISH':
-                    passwd = FileBeast.Hash.sha256(passwd)
-                    FileBeast.Handler.HandleOperation(FileBeast.Decrypt.blowfish, [infile, outfile, passwd],
-                                                      ['Decrypt', infile, alg], False)
-                else:
-                    print Fore.RED + '[-] No algorithm specified'
-                    sys.exit()
-            elif stat == 'compress':
-                if infile == '':
-                    print Fore.RED + '[-] No input file specified'
-                    sys.exit()
-                elif outfile == '':
-                    print Fore.RED + '[-] No output file specified'
-                    sys.exit()
-                elif level == -1:
-                    print Fore.RED + '[-] No compression level specified'
-                    sys.exit()
-                elif passwd != '' or indirectory != '' or outdirectory != '':
-                    FileBeast.invalid(True)
-                if alg == 'BZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.bzip, [infile, outfile, level],
-                                                      ['Compress', infile, alg], False)
-                elif alg == 'GZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.gzip, [infile, outfile, level],
-                                                      ['Compress', infile, alg], False)
-                elif alg == 'ZLIB':
-                    FileBeast.Handler.HandleOperation(FileBeast.Compress.zlib, [infile, outfile, level],
-                                                      ['Compress', infile, alg], False)
-                else:
-                    print Fore.RED + '[-] No algorithm specified'
-                    sys.exit()
-            elif stat == 'decompress':
-                if infile == '':
-                    print Fore.RED + '[-] No input file specified'
-                    sys.exit()
-                elif alg == '':
-                    print Fore.RED + '[-] No algorithm specified'
-                    sys.exit()
-                elif level != -1 or passwd != '':
-                    FileBeast.invalid(True)
-                elif tarfile.is_tarfile(infile) and outdirectory == '':
-                    print Fore.RED + '[-] No output directory specified'
-                    sys.exit()
-                elif not tarfile.is_tarfile(infile) and outfile == '':
-                    print Fore.RED + '[-] No output file specified'
-                    sys.exit()
-                if tarfile.is_tarfile(infile):
-                    FileBeast.Handler.HandleOperation(FileBeast.Decompress.tar, [infile, outdirectory],
-                                                      ['Decompress', infile, 'TAR'], False)
-                elif alg == 'BZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Decompress.bzip, [infile, outfile],
-                                                      ['Decompress', infile, alg], False)
-                elif alg == 'GZIP':
-                    FileBeast.Handler.HandleOperation(FileBeast.Decompress.gzip, [infile, outfile],
-                                                      ['Decompress', infile, alg], False)
-                elif alg == 'ZLIB':
-                    FileBeast.Handler.HandleOperation(FileBeast.Decompress.zlib, [infile, outfile],
-                                                      ['Decompress', infile, alg], False)
-                else:
-                    print Fore.RED + '[-] No algorithm specified'
-                    sys.exit()
-            elif stat == 'archive':
-                if infile == '' and indirectory == '':
-                    FileBeast.invalid(True)
-                elif outfile == '' and outdirectory == '':
-                    FileBeast.invalid(True)
-                elif level != -1 or passwd != '' or alg == '':
-                    FileBeast.invalid(True)
-                if alg == 'TAR-GZIP':
-                    if infile != '':
-                        FileBeast.Handler.HandleOperation(FileBeast.Compress.tarFile, [infile, outfile, 'w:gz'],
-                                                          ['Archiv', infile, alg], False)
-                    elif indirectory != '':
-                        FileBeast.Handler.HandleOperation(FileBeast.Compress.tarDirectory,
-                                                          [indirectory, outfile, 'w:gz'],
-                                                          ['Archiv', indirectory, alg], False)
-                elif alg == 'TAR-BZIP':
-                    if infile != '':
-                        FileBeast.Handler.HandleOperation(FileBeast.Compress.tarFile, [infile, outfile, 'w:bz2'],
-                                                          ['Archiv', infile, alg], False)
-                    elif indirectory != '':
-                        FileBeast.Handler.HandleOperation(FileBeast.Compress.tarDirectory,
-                                                          [indirectory, outfile, 'w:bz2'],
-                                                          ['Archiv', indirectory, alg], False)
-                elif alg == 'TAR':
-                    if infile != '':
-                        FileBeast.Handler.HandleOperation(FileBeast.Compress.tarFile, [infile, outfile, 'w'],
-                                                          ['Archiv', infile, alg], False)
-                    elif indirectory != '':
-                        FileBeast.Handler.HandleOperation(FileBeast.Compress.tarDirectory,
-                                                          [indirectory, outfile, 'w'],
-                                                          ['Archiv', indirectory, alg], False)
-                else:
-                    print Fore.RED + '[-] No algorithm specified'
-                    sys.exit()
-            print Fore.RED + '[-] Too few arguments given'
-            sys.exit()
-
-    def __init__(self):
-        self.banner()
-
-    @staticmethod
-    def invalid(show):
-        print Fore.RED + '[-] Invalid option selected'
-        if show:
-            FileBeast.usage(False)
-        else:
-            raw_input("Press Enter to continue...")
-
-    @staticmethod
-    def usage(show):
-        usage = '[*] Usage : FileBeast -i <inputfile> -m <method> -a <algorithm> -p <password>'
-        usage += '/-l <level> -o <outputfile> -d'
-        usage += '''\n                -h                      display help
-                -v                      display version
-                -s                      display supported algorithms
-                -u                      update FileBeast
-                -i                      input file path
-                -I                      input directory path
-                -o                      output file path
-                -O                      output directory path
-                -a                      encryption/compression algorithm
-                -m                      set method(encrypt/decrypt/compress/decompress/archive)
-                -p                      password for encryption/decryption
-                -l                      level for compression(0 to 9)
-                -d                      delete original file/directory
-        '''
-        print Fore.LIGHTYELLOW_EX + usage
-        FileBeast.showalgs(False)
-        example = '[*] Example : FileBeast -i test.txt -m encrypt -a AES -p password123 -o test.txt.enc'
-        example += '\n[*] Example : FileBeast -i test.txt.enc -m decrypt -a AES -p password123 -o test.txt'
-        example += '\n[*] Example : FileBeast -i test.txt -m compress -a gzip -l 9 -o test.txt.compressed'
-        example += '\n[*] Example : FileBeast -I directory/ -m archive -a tar-gzip -o test.txt.tar.gz'
-        example += '\n[*] Example : FileBeast -i test.txt.compressed -m decompress -a gzip -o test.txt'
-        example += '\n[*] Example : FileBeast -i test.tar.gz -m decompress -a tar-gzip -O test/'
-        print Fore.LIGHTYELLOW_EX + example
-        if show:
-            raw_input("Press Enter to continue...")
-        else:
-            sys.exit()
-
-    @staticmethod
-    def showalgs(show):
-        print Fore.LIGHTYELLOW_EX + '[*] Supported Encryption Algorithms : '
-        for i in FileBeast.enc:
-            print Fore.LIGHTYELLOW_EX + '                                       %s\n' % i
-        print Fore.LIGHTYELLOW_EX + '[*] Supported Compression Algorithms : '
-        for i in FileBeast.cmp:
-            print Fore.LIGHTYELLOW_EX + '                                       %s\n' % i
-        print Fore.LIGHTYELLOW_EX + '[*] Supported Archiving Algorithms : '
-        for i in FileBeast.arc:
-            print Fore.LIGHTYELLOW_EX + '                                       %s\n' % i
-        if show:
-            raw_input("Press Enter to continue...")
-
-    @staticmethod
-    def error(errorcode):
-        print (Fore.RED + '\n[-] Error : %s' % errorcode)
-        sys.exit()
-
-    @staticmethod
-    def banner():
-        print Fore.LIGHTRED_EX + ''' 	
+__author__ = 'Sepehrdad Sh'
+__version__ = '2.0.1'
+__banner__ = Fore.LIGHTRED_EX + ''' 	
           .                                                      .
         .n                   .                 .                  n.
   .   .dP                  dP                   9b                 9b.    .
@@ -1273,21 +29,574 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
                                `             '
                           FileBeast by Sepehrdad Sh
 '''
+__about__ = Fore.LIGHTRED_EX + 'FileBeast is an open source application Developed by Sepehrdad Sh used \n' \
+                              'to Encrypt or Compress Files on the local disk for many purposes such as:\n' \
+                              'backup and security It uses AES,TripleDES and BlowFish for \n' \
+                              'Encryption algorithm and GZIP,BZIP and ZLib for Compression'
 
-    @staticmethod
-    def version(show):
-        print Fore.LIGHTYELLOW_EX + '[*] FileBeast Version %s' % FileBeast.__version__
-        if show:
-            raw_input("Press Enter to continue...")
+urls = {'version': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/version',
+        'win32': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Windows/FileBeast.exe',
+        'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/FileBeast'}
+checksums = {'win32': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Windows/checksum',
+             'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/checksum'}
+chunksize = 64 * 1024
+
+
+def ErrorHandler(function):
+    def wrapper(*args, **kwargs):
+        try:
+            result = function(*args, **kwargs)
+            return result
+        except Exception as ex:
+            print(Fore.RED + '\n[-] Error : %s' % ex)
+            return
+    return wrapper
+
+
+def Timer(function):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = function(*args, **kwargs)
+        elapsed_time = time.time() - start_time
+        print(Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time)
+        return result
+    return wrapper
+
+
+def Pause(function):
+    def wrapper(*args, **kwargs):
+        result = function(*args, **kwargs)
+        input(Fore.RESET + "Press Enter to continue...")
+        return result
+    return wrapper
+
+
+@Timer
+@ErrorHandler
+def encrypt(key, infilepath, outfilepath, method):
+    print(Fore.LIGHTYELLOW_EX + 'Encrypting %s with %s algorithm...' % (infilepath, method))
+    filesize = str(os.path.getsize(infilepath)).zfill(16)
+    if method == 'AES':
+        from Crypto.Cipher import AES
+        from Crypto.Hash import SHA256
+        IV = Random.new().read(AES.block_size)
+        key = SHA256.new(key.encode('utf-8')).digest()
+        encryptor = AES.new(key, AES.MODE_CBC, IV)
+    elif method == 'DES3':
+        from Crypto.Cipher import DES3
+        from Crypto.Hash import MD5
+        IV = Random.new().read(DES3.block_size)
+        key = MD5.new(key.encode('utf-8')).digest()
+        encryptor = DES3.new(key, DES3.MODE_CBC, IV)
+    elif method == 'BLOWFISH':
+        from Crypto.Cipher import Blowfish
+        from Crypto.Hash import SHA256
+        IV = Random.new().read(Blowfish.block_size)
+        key = SHA256.new(key.encode('utf-8')).digest()
+        encryptor = Blowfish.new(key, Blowfish.MODE_CBC, IV)
+    else:
+        print(Fore.RED + '[-] Invalid method selected')
+        return
+    with open(infilepath, 'rb') as infile:
+        with open(outfilepath, 'wb') as outfile:
+            outfile.write(filesize.encode('utf-8'))
+            outfile.write(IV)
+            while True:
+                chunk = infile.read(chunksize)
+                if len(chunk) == 0:
+                    break
+                elif len(chunk) % 16 != 0:
+                    chunk += b' ' * (16 - (len(chunk) % 16))
+                outfile.write(encryptor.encrypt(chunk))
+    print(Fore.GREEN + '[+] Successfully encrypted %s' % infilepath)
+
+
+@Timer
+@ErrorHandler
+def decrypt(key, infilepath, outfilepath, method):
+    print(Fore.LIGHTYELLOW_EX + 'Decrypting %s with %s algorithm...' % (infilepath, method))
+    with open(infilepath, 'rb') as infile:
+        filesize = int(infile.read(16))
+        IV = infile.read(16)
+        if method == 'AES':
+            from Crypto.Cipher import AES
+            from Crypto.Hash import SHA256
+            key = SHA256.new(key.encode('utf-8')).digest()
+            decryptor = AES.new(key, AES.MODE_CBC, IV)
+        elif method == 'DES3':
+            from Crypto.Cipher import DES3
+            from Crypto.Hash import MD5
+            key = MD5.new(key.encode('utf-8')).digest()
+            decryptor = DES3.new(key, DES3.MODE_CBC, IV)
+        elif method == 'BLOWFISH':
+            from Crypto.Cipher import Blowfish
+            from Crypto.Hash import SHA256
+            key = SHA256.new(key.encode('utf-8')).digest()
+            decryptor = Blowfish.new(key, Blowfish.MODE_CBC, IV)
         else:
-            sys.exit()
+            print(Fore.RED + '[-] Invalid method selected')
+            return
+        with open(outfilepath, 'wb') as outfile:
+            while True:
+                chunk = infile.read(chunksize)
+                if len(chunk) == 0:
+                    break
+                outfile.write(decryptor.decrypt(chunk))
+            outfile.truncate(filesize)
+    print(Fore.GREEN + '[+] Successfully decrypted %s' % infilepath)
+
+
+@Timer
+@ErrorHandler
+def compress(infilepath, outfilepath, level, method):
+    print(Fore.LIGHTYELLOW_EX + 'Compressing %s with %s algorithm...' % (infilepath, method))
+    if method == 'BZIP':
+        import bz2
+        from shutil import copyfileobj
+        with open(infilepath, 'rb') as Input:
+            with bz2.BZ2File(outfilepath, 'wb', level) as Output:
+                copyfileobj(Input, Output)
+    elif method == 'GZIP':
+        import gzip
+        from shutil import copyfileobj
+        with open(infilepath, 'rb') as Input:
+            with gzip.GzipFile(outfilepath, 'wb', level) as Output:
+                copyfileobj(Input, Output)
+    elif method == 'ZLIB':
+        import zlib
+        compressor = zlib.compressobj(level)
+        Input = open(infilepath, 'r')
+        Output = open(outfilepath, 'w')
+        block = Input.read(2048)
+        while block:
+            cBlock = compressor.compress(block)
+            Output.write(cBlock)
+            block = Input.read(2048)
+        cBlock = compressor.flush()
+        Output.write(cBlock)
+        Input.close()
+        Output.close()
+    else:
+        print(Fore.RED + '[-] Invalid method selected')
+        return
+    print(Fore.GREEN + '[+] Successfully compressed %s' % infilepath)
+
+
+@Timer
+@ErrorHandler
+def decompress(infilepath, outfilepath, method):
+    print(Fore.LIGHTYELLOW_EX + 'Decompressing %s with %s algorithm...' % (infilepath, method))
+    if method == 'BZIP':
+        import bz2
+        from shutil import copyfileobj
+        with bz2.BZ2File(infilepath, 'rb') as Input:
+            with open(outfilepath, 'wb') as Output:
+                copyfileobj(Input, Output)
+    elif method == 'GZIP':
+        import gzip
+        from shutil import copyfileobj
+        with gzip.GzipFile(infilepath, 'rb') as Input:
+            with open(outfilepath, 'wb') as Output:
+                copyfileobj(Input, Output)
+    elif method == 'ZLIB':
+        import zlib
+        decompressor = zlib.decompressobj()
+        Input = open(infilepath, 'r')
+        Output = open(outfilepath, 'w')
+        block = Input.read(2048)
+        while block:
+            cBlock = decompressor.decompress(block)
+            Output.write(cBlock)
+            block = Input.read(2048)
+        cBlock = decompressor.flush()
+        Output.write(cBlock)
+        Input.close()
+        Output.close()
+    else:
+        print(Fore.RED + '[-] Invalid method selected')
+        return
+    print(Fore.GREEN + '[+] Successfully decompressed %s' % infilepath)
+
+
+@ErrorHandler
+def fetchurl(url):
+    import requests
+    return requests.get(url).content.rstrip()
+
+
+def fetchfile(url, path):
+    try:
+        import requests
+        from tqdm import tqdm
+        chunk_size = 1024
+        r = requests.get(url, stream=True)
+        total_size = int(r.headers['content-length'])
+        with open(path, 'wb') as f:
+            for data in tqdm(iterable=r.iter_content(chunk_size=chunk_size), total=total_size / chunk_size,
+                             unit='KB'):
+                f.write(data)
+    except Exception:
+        os.remove(path)
+        print(Fore.RED + 'Error while downloading file')
+
+
+@ErrorHandler
+def getchecksum(filepath):
+    import hashlib
+    BUF_SIZE = 65536
+    sha256 = hashlib.sha256()
+    with open(filepath, 'rb') as f:
+        while True:
+            data = f.read(BUF_SIZE)
+            if not data:
+                break
+            sha256.update(data)
+    return sha256.hexdigest()
+
+
+@Timer
+@ErrorHandler
+@Pause
+def checkforupdate():
+    print(Fore.LIGHTYELLOW_EX + '[*] Checking for Update...')
+    version = fetchurl(urls['version'])
+    if version is None:
+        return
+    elif __version__ == version:
+        print(Fore.GREEN + '[+] FileBeast is up to date')
+    else:
+        while True:
+            choice = input(Fore.LIGHTYELLOW_EX + '[!] Update available, Would you like to update ?[y/n] :')
+            if choice == 'y':
+                import subprocess
+                import sys
+                if os.name in ('nt', 'dos'):
+                    checksum = fetchurl(checksums['win32'])
+                    latestfile = 'latest.exe'
+                    fetchfile(urls['win32'], latestfile)
+                    if getchecksum(latestfile).encode('utf-8') == checksum:
+                        cmd = 'ping 127.0.0.1 -n 2 > nul'
+                        cmd += ' && del %s && rename %s FileBeast.exe' % (sys.argv[0], latestfile)
+                        subprocess.Popen(cmd, shell=True)
+                        exit()
+                    else:
+                        print(Fore.RED + '[-] Error while updating please try again')
+                        os.remove(os.path.realpath(latestfile))
+                elif os.name in ('linux', 'posix'):
+                    checksum = fetchurl(checksums['linux'])
+                    latestfile = 'latest'
+                    fetchfile(urls['linux'], latestfile)
+                    if getchecksum(latestfile).encode('utf-8') == checksum:
+                        cmd = 'ping 127.0.0.1 -c 2 >> /dev/null'
+                        cmd += ' && rm -rf %s && mv %s FileBeast' % (sys.argv[0], latestfile)
+                        cmd += ' && chmod +x FileBeast'
+                        subprocess.Popen(cmd, shell=True)
+                        exit()
+                    else:
+                        print(Fore.RED + '[-] Error while updating please try again')
+                        os.remove(os.path.realpath(latestfile))
+                else:
+                    print(Fore.RED + '[-] Unsupported OS')
+                    print(Fore.LIGHTYELLOW_EX + 'Please visit https://github.com/sepehrdaddev/FileBeast')
+                break
+            elif choice == 'n':
+                break
+            else:
+                print(Fore.RED + '[-] Invalid option selected')
+                continue
+
+
+def main_menu():
+    menu = [
+        'Encrypt',
+        'Decrypt',
+        'Compress',
+        'Decompress',
+        'Update',
+        'Version',
+        'About',
+        'Exit'
+    ]
+    while True:
+        print(__banner__)
+        for i in menu:
+            print(' [%s] %s' % (menu.index(i), i))
+        ans = input("\nFileBeast>")
+        if ans == '0':
+            encrypt_menu()
+        elif ans == '1':
+            decrypt_menu()
+        elif ans == '2':
+            compress_menu()
+        elif ans == '3':
+            decompress_menu()
+        elif ans == '4':
+            checkforupdate()
+        elif ans == '5':
+            print(__banner__)
+            print(Fore.LIGHTYELLOW_EX + '[*] FileBeast Version %s' % __version__)
+            input("Press Enter to continue...")
+        elif ans == '6':
+            print(__banner__)
+            print(__about__)
+            input("Press Enter to continue...")
+        elif ans == '7':
+            print(__banner__)
+            print(Fore.LIGHTYELLOW_EX + '[!] Exitting...')
+            break
+        else:
+            print(Fore.RED + '[-] Invalid option selected')
+            input("Press Enter to continue...")
+            continue
+        continue
+
+
+def encrypt_menu():
+    algs = ['AES', 'DES3', 'BLOWFISH']
+    alg = ''
+    infile = ''
+    outfile = ''
+    passwd = ''
+    while True:
+        try:
+            print('\nSelect encryption algorithm: \n')
+            for i in algs:
+                print(' [%s] %s' % (algs.index(i), i))
+            print(' [3] Back to Main menu\n')
+            ans = input("FileBeast(" + Fore.RED + "Encrypt" + Fore.RESET + ")>")
+            try:
+                ans = int(ans)
+            except:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            if ans > len(algs) or ans < 0:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            elif ans == 3:
+                break
+            elif algs[ans]:
+                alg = algs[ans]
+                while True:
+                    try:
+                        print('Input file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        if os.path.isfile(ans):
+                            infile = ans
+                            break
+                        else:
+                            print(Fore.RED + '[-] File %s not found' % ans)
+                    except KeyboardInterrupt:
+                        continue
+                while True:
+                    try:
+                        print('Output file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        outfile = ans
+                        break
+                    except KeyboardInterrupt:
+                        continue
+                while True:
+                    try:
+                        import getpass
+                        passwd = getpass.getpass('Password: ')
+                        break
+                    except KeyboardInterrupt:
+                        continue
+            else:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            encrypt(passwd, infile, outfile, alg)
+        except KeyboardInterrupt:
+            continue
+
+
+def decrypt_menu():
+    algs = ['AES', 'DES3', 'BLOWFISH']
+    alg = ''
+    infile = ''
+    outfile = ''
+    passwd = ''
+    while True:
+        try:
+            print('\nSelect encryption algorithm: \n')
+            for i in algs:
+                print(' [%s] %s' % (algs.index(i), i))
+            print(' [3] Back to Main menu\n')
+            ans = input("FileBeast(" + Fore.RED + "Decrypt" + Fore.RESET + ")>")
+            try:
+                ans = int(ans)
+            except:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            if ans > len(algs) or ans < 0:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            elif ans == 3:
+                break
+            elif algs[ans]:
+                alg = algs[ans]
+                while True:
+                    try:
+                        print('Input file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        if os.path.isfile(ans):
+                            infile = ans
+                            break
+                        else:
+                            print(Fore.RED + '[-] File %s not found' % ans)
+                    except KeyboardInterrupt:
+                        continue
+                while True:
+                    try:
+                        print('Output file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        outfile = ans
+                        break
+                    except KeyboardInterrupt:
+                        continue
+                while True:
+                    try:
+                        import getpass
+                        passwd = getpass.getpass('Password: ')
+                        break
+                    except KeyboardInterrupt:
+                        continue
+            else:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            decrypt(passwd, infile, outfile, alg)
+        except KeyboardInterrupt:
+            continue
+
+
+def compress_menu():
+    algs = ['BZIP', 'GZIP', 'ZLIB']
+    alg = ''
+    infile = ''
+    outfile = ''
+    level = -1
+    while True:
+        try:
+            print('\nSelect compression algorithm: \n')
+            for i in algs:
+                print(' [%s] %s' % (algs.index(i), i))
+            print(' [3] Back to Main menu\n')
+            ans = input("FileBeast(" + Fore.RED + "Compress" + Fore.RESET + ")>")
+            try:
+                ans = int(ans)
+            except:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            if ans > len(algs) or ans < 0:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            elif ans == 3:
+                break
+            elif algs[ans]:
+                alg = algs[ans]
+                while True:
+                    try:
+                        print('Input file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        if os.path.isfile(ans):
+                            infile = ans
+                            break
+                        else:
+                            print(Fore.RED + '[-] File %s not found' % ans)
+                    except KeyboardInterrupt:
+                        continue
+                while True:
+                    try:
+                        print('Output file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        outfile = ans
+                        break
+                    except KeyboardInterrupt:
+                        continue
+                while True:
+                    try:
+                        ans = input('Compression level(0 to 9): ')
+                        try:
+                            level = int(ans)
+                        except:
+                            print(Fore.RED + '[-] %s is not a valid number' % ans)
+                        if level in (range(0, 10)):
+                            break
+                        else:
+                            print(Fore.RED + '[-] Compression level %s is invalid' % ans)
+                    except:
+                        continue
+            else:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            compress(infile, outfile, level, alg)
+        except KeyboardInterrupt:
+            continue
+
+
+def decompress_menu():
+    algs = ['BZIP', 'GZIP', 'ZLIB']
+    alg = ''
+    infile = ''
+    outfile = ''
+    while True:
+        try:
+            print('\nSelect compression algorithm: \n')
+            for i in algs:
+                print(' [%s] %s' % (algs.index(i), i))
+            print(' [3] Back to Main menu\n')
+            ans = input("FileBeast(" + Fore.RED + "Decompress" + Fore.RESET + ")>")
+            try:
+                ans = int(ans)
+            except:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            if ans > len(algs) or ans < 0:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            elif ans == 3:
+                break
+            elif algs[ans]:
+                alg = algs[ans]
+                while True:
+                    try:
+                        print('Input file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        if os.path.isfile(ans):
+                            infile = ans
+                            break
+                        else:
+                            print(Fore.RED + '[-] File %s not found' % ans)
+                    except KeyboardInterrupt:
+                        continue
+                while True:
+                    try:
+                        print('Output file path: \n')
+                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        outfile = ans
+                        break
+                    except KeyboardInterrupt:
+                        continue
+            else:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
+            decompress(infile, outfile, alg)
+        except KeyboardInterrupt:
+            continue
+
 
 if __name__ == '__main__':
     init(autoreset=True)
-    try:
-        if len(sys.argv[1:]) == 0:
-            FileBeast.Interface.Mainmenu()
-        else:
-            FileBeast().Handler.HandleArgs(sys.argv[1:])
-    except Exception, e:
-        FileBeast.error(e)
+    main_menu()

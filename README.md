@@ -3,8 +3,7 @@
 # README #
 __FileBeast__ is an open source application used to __Encrypt or Compress__ Files on the local disk
 for many purposes such as: backup and security
-It uses __AES,TripleDES and BlowFish__ for Encryption algorithm and __GZIP,BZIP and ZLib__ for Compression and 
-__TAR, TAR-GZIP and TAR-BZIP__ for Archiving
+It uses __AES,TripleDES and BlowFish__ for Encryption algorithm and __GZIP,BZIP and ZLib__ for Compression.
 
 <p align="center"><img src="./Pictures/FileBeast.png" alt="The FILEBEAST Project"></p>
 
@@ -16,7 +15,7 @@ FileBeast is developed by sepehrdad sh
 ### What is this repository for? ###
 
 * FileBeast Python File encryption-compression tool
-* ver 1.3.2
+* ver 2.0.1
 
 ### How do I get set up? ###
 # A) #
@@ -27,54 +26,7 @@ FileBeast is developed by sepehrdad sh
 4)  Run `python FileBeast.py` in shell
 # B) #
 1)  Download standalone from : https://github.com/sepehrdaddev/FileBeast/releases and extract it
-
-### Usage ###
-
-```
-[*] Usage : FileBeast -i <inputfile> -m <method> -a <algorithm> -p <password>/-l <level> -o <outputfile> -d
-                -h                      display help
-                -v                      display version
-                -s                      display supported algorithms
-                -u                      update FileBeast
-                -i                      input file path
-                -I                      input directory path
-                -o                      output file path
-                -O                      output directory path
-                -a                      encryption/compression algorithm
-                -m                      set method(encrypt/decrypt/compress/decompress/archive)
-                -p                      password for encryption/decryption
-                -l                      level for compression(0 to 9)
-                -d                      delete original file/directory
-        
-[*] Supported Encryption Algorithms : 
-                                       AES
-
-                                       DES3
-
-                                       BLOWFISH
-
-[*] Supported Compression Algorithms : 
-                                       BZIP
-
-                                       GZIP
-
-                                       ZLIB
-
-[*] Supported Archiving Algorithms : 
-                                       TAR-GZIP
-
-                                       TAR-BZIP
-
-                                       TAR
-
-[*] Example : FileBeast -i test.txt -m encrypt -a AES -p password123 -o test.txt.enc
-[*] Example : FileBeast -i test.txt.enc -m decrypt -a AES -p password123 -o test.txt
-[*] Example : FileBeast -i test.txt -m compress -a gzip -l 9 -o test.txt.compressed
-[*] Example : FileBeast -I directory/ -m archive -a tar-gzip -o test.txt.tar.gz
-[*] Example : FileBeast -i test.txt.compressed -m decompress -a gzip -o test.txt
-[*] Example : FileBeast -i test.tar.gz -m decompress -a tar-gzip -O test/
-
-```
+2)  run `./FileBeast` in terminal or run `FileBeast.exe` in command prompt
 
 ### How to Compile ###
 
