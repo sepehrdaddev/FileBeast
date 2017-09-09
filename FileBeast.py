@@ -109,6 +109,7 @@ def encrypt(key, infilepath, outfilepath, method):
                     chunk += b' ' * (16 - (len(chunk) % 16))
                 outfile.write(encryptor.encrypt(chunk))
     print(Fore.GREEN + '[+] Successfully encrypted %s' % infilepath)
+    deleter(infilepath)
 
 
 @Timer
@@ -144,6 +145,7 @@ def decrypt(key, infilepath, outfilepath, method):
                 outfile.write(decryptor.decrypt(chunk))
             outfile.truncate(filesize)
     print(Fore.GREEN + '[+] Successfully decrypted %s' % infilepath)
+    deleter(infilepath)
 
 
 @Timer
@@ -180,6 +182,7 @@ def compress(infilepath, outfilepath, level, method):
         print(Fore.RED + '[-] Invalid method selected')
         return
     print(Fore.GREEN + '[+] Successfully compressed %s' % infilepath)
+    deleter(infilepath)
 
 
 @Timer
@@ -216,6 +219,7 @@ def decompress(infilepath, outfilepath, method):
         print(Fore.RED + '[-] Invalid method selected')
         return
     print(Fore.GREEN + '[+] Successfully decompressed %s' % infilepath)
+    deleter(infilepath)
 
 
 @ErrorHandler
@@ -266,7 +270,8 @@ def checkforupdate():
         print(Fore.GREEN + '[+] FileBeast is up to date')
     else:
         while True:
-            choice = input(Fore.LIGHTYELLOW_EX + '[!] Update available, Would you like to update ?[y/n] :')
+            print(Fore.LIGHTYELLOW_EX + '[!] Update available, Would you like to update ?[y/n]: ' + Fore.RESET, end='')
+            choice = input()
             if choice == 'y':
                 import subprocess
                 import sys
@@ -275,10 +280,9 @@ def checkforupdate():
                     latestfile = 'latest.exe'
                     fetchfile(urls['win32'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
-                        cmd = 'ping 127.0.0.1 -n 2 > nul'
-                        cmd += ' && del %s && rename %s FileBeast.exe' % (sys.argv[0], latestfile)
-                        subprocess.Popen(cmd, shell=True)
-                        exit()
+                        subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.exe '
+                                         '&& start FileBeast.exe' % (sys.argv[0], latestfile), shell=True)
+                        sys.exit()
                     else:
                         print(Fore.RED + '[-] Error while updating please try again')
                         os.remove(os.path.realpath(latestfile))
@@ -287,11 +291,9 @@ def checkforupdate():
                     latestfile = 'latest'
                     fetchfile(urls['linux'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
-                        cmd = 'ping 127.0.0.1 -c 2 >> /dev/null'
-                        cmd += ' && rm -rf %s && mv %s FileBeast' % (sys.argv[0], latestfile)
-                        cmd += ' && chmod +x FileBeast'
-                        subprocess.Popen(cmd, shell=True)
-                        exit()
+                        subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast '
+                                         '&& chmod +x FileBeast && ./FileBeast' % (sys.argv[0], latestfile), shell=True)
+                        sys.exit()
                     else:
                         print(Fore.RED + '[-] Error while updating please try again')
                         os.remove(os.path.realpath(latestfile))
@@ -595,6 +597,20 @@ def decompress_menu():
             decompress(infile, outfile, alg)
         except KeyboardInterrupt:
             continue
+
+
+@ErrorHandler
+def deleter(infile):
+    while True:
+        print(Fore.LIGHTYELLOW_EX + '[!] Would you like to delete original file ?[y/n]: ' + Fore.RESET, end='')
+        choice = input()
+        if choice == 'y':
+            print(Fore.LIGHTYELLOW_EX + '[*] Deleting %s ' % infile)
+            os.remove(infile)
+            print(Fore.GREEN + '[+] Successfully Deleted %s ' % infile)
+            break
+        elif choice == 'n':
+            break
 
 
 if __name__ == '__main__':
