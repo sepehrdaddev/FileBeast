@@ -320,37 +320,40 @@ def main_menu():
         'Exit'
     ]
     while True:
-        print(__banner__)
-        for i in menu:
-            print(' [%s] %s' % (menu.index(i), i))
-        ans = input("\nFileBeast>")
-        if ans == '0':
-            encrypt_menu()
-        elif ans == '1':
-            decrypt_menu()
-        elif ans == '2':
-            compress_menu()
-        elif ans == '3':
-            decompress_menu()
-        elif ans == '4':
-            checkforupdate()
-        elif ans == '5':
+        try:
             print(__banner__)
-            print(Fore.LIGHTYELLOW_EX + '[*] FileBeast Version %s' % __version__)
-            input("Press Enter to continue...")
-        elif ans == '6':
-            print(__banner__)
-            print(__about__)
-            input("Press Enter to continue...")
-        elif ans == '7':
-            print(__banner__)
-            print(Fore.LIGHTYELLOW_EX + '[!] Exitting...')
-            break
-        else:
-            print(Fore.RED + '[-] Invalid option selected')
-            input("Press Enter to continue...")
+            for i in menu:
+                print(' [%s] %s' % (menu.index(i), i))
+            ans = input("\nFileBeast>")
+            if ans == '0':
+                encrypt_menu()
+            elif ans == '1':
+                decrypt_menu()
+            elif ans == '2':
+                compress_menu()
+            elif ans == '3':
+                decompress_menu()
+            elif ans == '4':
+                checkforupdate()
+            elif ans == '5':
+                print(__banner__)
+                print(Fore.LIGHTYELLOW_EX + '[*] FileBeast Version %s' % __version__)
+                input("Press Enter to continue...")
+            elif ans == '6':
+                print(__banner__)
+                print(__about__)
+                input("Press Enter to continue...")
+            elif ans == '7':
+                print(__banner__)
+                print(Fore.LIGHTYELLOW_EX + '[!] Exitting...')
+                break
+            else:
+                print(Fore.RED + '[-] Invalid option selected')
+                input("Press Enter to continue...")
+                continue
             continue
-        continue
+        except KeyboardInterrupt:
+            continue
 
 
 def encrypt_menu():
@@ -365,7 +368,8 @@ def encrypt_menu():
             for i in algs:
                 print(' [%s] %s' % (algs.index(i), i))
             print(' [3] Back to Main menu\n')
-            ans = input("FileBeast(" + Fore.RED + "Encrypt" + Fore.RESET + ")>")
+            print("FileBeast(" + Fore.RED + "Encrypt" + Fore.RESET + ")>", end='')
+            ans = input()
             try:
                 ans = int(ans)
             except:
@@ -383,36 +387,38 @@ def encrypt_menu():
                 while True:
                     try:
                         print('Input file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Encrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         if os.path.isfile(ans):
                             infile = ans
                             break
                         else:
                             print(Fore.RED + '[-] File %s not found' % ans)
                     except KeyboardInterrupt:
-                        continue
+                        return
                 while True:
                     try:
                         print('Output file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Encrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         outfile = ans
                         break
                     except KeyboardInterrupt:
-                        continue
+                        return
                 while True:
                     try:
                         import getpass
                         passwd = getpass.getpass('Password: ')
                         break
                     except KeyboardInterrupt:
-                        continue
+                        return
             else:
                 print(Fore.RED + '[-] Invalid option selected')
                 input("Press Enter to continue...")
                 continue
             encrypt(passwd, infile, outfile, alg)
         except KeyboardInterrupt:
-            continue
+            return
 
 
 def decrypt_menu():
@@ -427,7 +433,8 @@ def decrypt_menu():
             for i in algs:
                 print(' [%s] %s' % (algs.index(i), i))
             print(' [3] Back to Main menu\n')
-            ans = input("FileBeast(" + Fore.RED + "Decrypt" + Fore.RESET + ")>")
+            print("FileBeast(" + Fore.RED + "Decrypt" + Fore.RESET + ")>", end='')
+            ans = input()
             try:
                 ans = int(ans)
             except:
@@ -445,36 +452,38 @@ def decrypt_menu():
                 while True:
                     try:
                         print('Input file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Decrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         if os.path.isfile(ans):
                             infile = ans
                             break
                         else:
                             print(Fore.RED + '[-] File %s not found' % ans)
                     except KeyboardInterrupt:
-                        continue
+                        return
                 while True:
                     try:
                         print('Output file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Decrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         outfile = ans
                         break
                     except KeyboardInterrupt:
-                        continue
+                        return
                 while True:
                     try:
                         import getpass
                         passwd = getpass.getpass('Password: ')
                         break
                     except KeyboardInterrupt:
-                        continue
+                        return
             else:
                 print(Fore.RED + '[-] Invalid option selected')
                 input("Press Enter to continue...")
                 continue
             decrypt(passwd, infile, outfile, alg)
         except KeyboardInterrupt:
-            continue
+            return
 
 
 def compress_menu():
@@ -489,7 +498,8 @@ def compress_menu():
             for i in algs:
                 print(' [%s] %s' % (algs.index(i), i))
             print(' [3] Back to Main menu\n')
-            ans = input("FileBeast(" + Fore.RED + "Compress" + Fore.RESET + ")>")
+            print("FileBeast(" + Fore.RED + "Compress" + Fore.RESET + ")>", end='')
+            ans = input()
             try:
                 ans = int(ans)
             except:
@@ -507,22 +517,24 @@ def compress_menu():
                 while True:
                     try:
                         print('Input file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Compress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         if os.path.isfile(ans):
                             infile = ans
                             break
                         else:
                             print(Fore.RED + '[-] File %s not found' % ans)
                     except KeyboardInterrupt:
-                        continue
+                        return
                 while True:
                     try:
                         print('Output file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Compress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         outfile = ans
                         break
                     except KeyboardInterrupt:
-                        continue
+                        return
                 while True:
                     try:
                         ans = input('Compression level(0 to 9): ')
@@ -542,7 +554,7 @@ def compress_menu():
                 continue
             compress(infile, outfile, level, alg)
         except KeyboardInterrupt:
-            continue
+            return
 
 
 def decompress_menu():
@@ -556,7 +568,8 @@ def decompress_menu():
             for i in algs:
                 print(' [%s] %s' % (algs.index(i), i))
             print(' [3] Back to Main menu\n')
-            ans = input("FileBeast(" + Fore.RED + "Decompress" + Fore.RESET + ")>")
+            print("FileBeast(" + Fore.RED + "Decompress" + Fore.RESET + ")>", end='')
+            ans = input()
             try:
                 ans = int(ans)
             except:
@@ -574,29 +587,31 @@ def decompress_menu():
                 while True:
                     try:
                         print('Input file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Decompress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         if os.path.isfile(ans):
                             infile = ans
                             break
                         else:
                             print(Fore.RED + '[-] File %s not found' % ans)
                     except KeyboardInterrupt:
-                        continue
+                        return
                 while True:
                     try:
                         print('Output file path: \n')
-                        ans = input("FileBeast(" + Fore.RED + alg + Fore.RESET + ")>")
+                        print("FileBeast Decompress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
+                        ans = input()
                         outfile = ans
                         break
                     except KeyboardInterrupt:
-                        continue
+                        return
             else:
                 print(Fore.RED + '[-] Invalid option selected')
                 input("Press Enter to continue...")
                 continue
             decompress(infile, outfile, alg)
         except KeyboardInterrupt:
-            continue
+            return
 
 
 @ErrorHandler
