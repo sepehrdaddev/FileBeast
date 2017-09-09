@@ -66,7 +66,8 @@ def Timer(function):
 def Pause(function):
     def wrapper(*args, **kwargs):
         result = function(*args, **kwargs)
-        input(Fore.RESET + "Press Enter to continue...")
+        print(Fore.RESET + "Press Enter to continue...", end='')
+        input()
         return result
     return wrapper
 
