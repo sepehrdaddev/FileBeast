@@ -267,7 +267,7 @@ def checkforupdate():
     version = fetchurl(urls['version'])
     if version is None:
         return
-    elif __version__ == version:
+    elif __version__.encode('utf-8') == version:
         print(Fore.GREEN + '[+] FileBeast is up to date')
     else:
         while True:
