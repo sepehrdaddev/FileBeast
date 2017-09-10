@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from colorama import *
 from Crypto import Random
@@ -33,12 +34,15 @@ __about__ = Fore.LIGHTRED_EX + 'FileBeast is an open source application Develope
                               'to Encrypt or Compress Files on the local disk for many purposes such as:\n' \
                               'backup and security It uses AES,TripleDES and BlowFish for \n' \
                               'Encryption algorithm and GZIP,BZIP and ZLib for Compression'
+__filename__ = sys.argv[0]
 
 urls = {'version': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/version',
         'win32': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Windows/FileBeast.exe',
-        'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/FileBeast'}
+        'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/FileBeast',
+        'python': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/FileBeast.py'}
 checksums = {'win32': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Windows/checksum',
-             'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/checksum'}
+             'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/checksum',
+             'python': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/checksum'}
 chunksize = 64 * 1024
 
 
@@ -275,8 +279,26 @@ def checkforupdate():
             choice = input()
             if choice == 'y':
                 import subprocess
-                import sys
-                if os.name in ('nt', 'dos'):
+                if __filename__.endswith('.py'):
+                    checksum = fetchurl(checksums['python'])
+                    latestfile = 'latest.py'
+                    fetchfile(urls['python'], latestfile)
+                    if getchecksum(latestfile).encode('utf-8') == checksum:
+                        if os.name in ('nt', 'dos'):
+                            subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.py '
+                                             '&& python FileBeast.py' % (sys.argv[0], latestfile), shell=True)
+                        elif os.name in ('linux', 'posix'):
+                            subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast.py '
+                                             '&& chmod +x FileBeast.py '
+                                             '&& ./FileBeast.py' % (sys.argv[0], latestfile), shell=True)
+                        else:
+                            os.remove(sys.argv[0])
+                            os.rename(latestfile, 'FileBeast.py')
+                        sys.exit()
+                    else:
+                        print(Fore.RED + '[-] Error while updating please try again')
+                        os.remove(os.path.realpath(latestfile))
+                elif __filename__.endswith('.exe') and os.name in ('nt', 'dos'):
                     checksum = fetchurl(checksums['win32'])
                     latestfile = 'latest.exe'
                     fetchfile(urls['win32'], latestfile)
@@ -293,7 +315,8 @@ def checkforupdate():
                     fetchfile(urls['linux'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
                         subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast '
-                                         '&& chmod +x FileBeast && ./FileBeast' % (sys.argv[0], latestfile), shell=True)
+                                         '&& chmod +x FileBeast '
+                                         '&& ./FileBeast' % (sys.argv[0], latestfile), shell=True)
                         sys.exit()
                     else:
                         print(Fore.RED + '[-] Error while updating please try again')
