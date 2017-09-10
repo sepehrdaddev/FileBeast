@@ -285,11 +285,11 @@ def checkforupdate():
                     fetchfile(urls['python'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
                         if os.name in ('nt', 'dos'):
-                            subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.py '
-                                             '&& python FileBeast.py' % (sys.argv[0], latestfile), shell=True)
+                            subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.py'
+                                             % (sys.argv[0], latestfile), shell=True)
                         elif os.name in ('linux', 'posix'):
-                            subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast.py '
-                                             '&& python3 FileBeast.py' % (sys.argv[0], latestfile), shell=True)
+                            subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast.py'
+                                             % (sys.argv[0], latestfile), shell=True)
                         else:
                             os.remove(sys.argv[0])
                             os.rename(latestfile, 'FileBeast.py')
@@ -302,8 +302,8 @@ def checkforupdate():
                     latestfile = 'latest.exe'
                     fetchfile(urls['win32'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
-                        subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.exe '
-                                         '&& start FileBeast.exe' % (sys.argv[0], latestfile), shell=True)
+                        subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.exe'
+                                         % (sys.argv[0], latestfile), shell=True)
                         sys.exit()
                     else:
                         print(Fore.RED + '[-] Error while updating please try again')
@@ -313,9 +313,8 @@ def checkforupdate():
                     latestfile = 'latest'
                     fetchfile(urls['linux'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
-                        subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast '
-                                         '&& chmod +x FileBeast '
-                                         '&& ./FileBeast' % (sys.argv[0], latestfile), shell=True)
+                        subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast'
+                                         % (sys.argv[0], latestfile), shell=True)
                         sys.exit()
                     else:
                         print(Fore.RED + '[-] Error while updating please try again')
