@@ -289,8 +289,7 @@ def checkforupdate():
                                              '&& python FileBeast.py' % (sys.argv[0], latestfile), shell=True)
                         elif os.name in ('linux', 'posix'):
                             subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast.py '
-                                             '&& chmod +x FileBeast.py '
-                                             '&& ./FileBeast.py' % (sys.argv[0], latestfile), shell=True)
+                                             '&& python3 FileBeast.py' % (sys.argv[0], latestfile), shell=True)
                         else:
                             os.remove(sys.argv[0])
                             os.rename(latestfile, 'FileBeast.py')
