@@ -21,7 +21,7 @@ FileBeast is developed by sepehrdad sh
 # A) #
 1)  Download ZipFile from : https://github.com/sepehrdaddev/FileBeast/archive/master.zip and extract it or 
     Run `git clone https://github.com/sepehrdaddev/FileBeast.git` in the shell
-2)  Install python 2.7
+2)  Install python 3.x
 3)  Run `pip install -r requirements.txt` in shell
 4)  Run `python FileBeast.py` in shell
 # B) #
