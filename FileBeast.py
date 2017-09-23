@@ -43,6 +43,16 @@ urls = {'version': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/mas
 checksums = {'win32': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Windows/checksum',
              'linux': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/release/Linux/checksum',
              'python': 'https://raw.githubusercontent.com/sepehrdaddev/FileBeast/master/checksum'}
+post_scripts = {
+    'win32': {
+        'python': 'ping 127.0.0.1 -n 2 > nul && del {} && rename latest.py FileBeast.py'.format(sys.argv[0]),
+        'executable': 'ping 127.0.0.1 -n 2 > nul && del {} && rename latest.exe FileBeast.exe'.format(sys.argv[0])
+    },
+    'linux': {
+        'python': 'ping 127.0.0.1 -c 2 >> /dev/null && rm -rf {} && mv latest.py FileBeast.py'.format(sys.argv[0]),
+        'executable': 'ping 127.0.0.1 -c 2 >> /dev/null && rm -rf {} && mv latest FileBeast'.format(sys.argv[0])
+    }
+}
 chunksize = 64 * 1024
 
 
@@ -76,28 +86,203 @@ def Pause(function):
     return wrapper
 
 
+def menu_generater(function):
+    def wrapper():
+        encryption_algs = ['AES', 'DES3', 'BLOWFISH']
+        compression_algs = ['BZIP', 'GZIP', 'ZLIB']
+        if function.__name__ in ['encrypt', 'decrypt']:
+            alg = ''
+            infile = ''
+            outfile = ''
+            passwd = ''
+            while True:
+                try:
+                    print('\nSelect encryption algorithm: \n')
+                    for i in encryption_algs:
+                        print(' [%s] %s' % (encryption_algs.index(i), i))
+                    print(' [3] Back to Main menu\n')
+                    print("FileBeast(" + Fore.RED + function.__name__ + Fore.RESET + ")>", end='')
+                    ans = input()
+                    try:
+                        ans = int(ans)
+                    except:
+                        print(Fore.RED + '[-] Invalid option selected')
+                        input("Press Enter to continue...")
+                        continue
+                    if ans > len(encryption_algs) or ans < 0:
+                        print(Fore.RED + '[-] Invalid option selected')
+                        input("Press Enter to continue...")
+                        continue
+                    elif ans == 3:
+                        break
+                    elif encryption_algs[ans]:
+                        alg = encryption_algs[ans]
+                        while True:
+                            try:
+                                print('Input file path: \n')
+                                print("FileBeast {}(".format(function.__name__) + Fore.RED + alg + Fore.RESET + ")>"
+                                      , end='')
+                                ans = input()
+                                if os.path.isfile(ans):
+                                    infile = ans
+                                    break
+                                else:
+                                    print(Fore.RED + '[-] File %s not found' % ans)
+                            except KeyboardInterrupt:
+                                return
+                        while True:
+                            try:
+                                print('Output file path: \n')
+                                print("FileBeast {}(".format(function.__name__) + Fore.RED + alg + Fore.RESET + ")>"
+                                      , end='')
+                                ans = input()
+                                outfile = ans
+                                break
+                            except KeyboardInterrupt:
+                                return
+                        while True:
+                            try:
+                                import getpass
+                                passwd = getpass.getpass('Password: ')
+                                break
+                            except KeyboardInterrupt:
+                                return
+                        while True:
+                            try:
+                                ans = input('Would you like to hash your password ? [y/n]')
+                                if ans == 'y':
+                                    hashalg = ['md2', 'md4', 'md5', 'sha', 'sha256']
+                                    if alg == 'DES3':
+                                        hashalg.remove('sha256')
+                                    print('\nSelect hashing algorithm: \n')
+                                    for i in hashalg:
+                                        print(' [%s] %s' % (hashalg.index(i), i.upper()))
+                                    print("\nFileBeast(" + Fore.RED + "hash" + Fore.RESET + ")>", end='')
+                                    ans = input()
+                                    try:
+                                        ans = int(ans)
+                                    except:
+                                        print(Fore.RED + '[-] Invalid option selected')
+                                        input("Press Enter to continue...")
+                                        continue
+                                    if ans > (len(hashalg) - 1) or ans < 0:
+                                        print(Fore.RED + '[-] Invalid option selected')
+                                        input("Press Enter to continue...")
+                                        continue
+                                    elif hashalg[ans]:
+                                        passwd = hasher(passwd, hashalg[ans])
+                                        break
+                                elif ans == 'n':
+                                    passwd = passwd.encode('utf-8')
+                                else:
+                                    print(Fore.RED + '[-] Invalid option selected')
+                            except KeyboardInterrupt:
+                                return
+                    else:
+                        print(Fore.RED + '[-] Invalid option selected')
+                        input("Press Enter to continue...")
+                        continue
+                    function(passwd, infile, outfile, alg)
+                except KeyboardInterrupt:
+                    return
+        elif function.__name__ in ['compress', 'decompress']:
+            alg = ''
+            infile = ''
+            outfile = ''
+            if function.__name__ == 'compress':
+                level = -1
+            while True:
+                try:
+                    print('\nSelect compression algorithm: \n')
+                    for i in compression_algs:
+                        print(' [%s] %s' % (compression_algs.index(i), i))
+                    print(' [3] Back to Main menu\n')
+                    print("FileBeast(" + Fore.RED + function.__name__ + Fore.RESET + ")>", end='')
+                    ans = input()
+                    try:
+                        ans = int(ans)
+                    except:
+                        print(Fore.RED + '[-] Invalid option selected')
+                        input("Press Enter to continue...")
+                        continue
+                    if ans > len(compression_algs) or ans < 0:
+                        print(Fore.RED + '[-] Invalid option selected')
+                        input("Press Enter to continue...")
+                        continue
+                    elif ans == 3:
+                        break
+                    elif compression_algs[ans]:
+                        alg = compression_algs[ans]
+                        while True:
+                            try:
+                                print('Input file path: \n')
+                                print("FileBeast {}(".format(function.__name__) + Fore.RED + alg + Fore.RESET + ")>"
+                                      , end='')
+                                ans = input()
+                                if os.path.isfile(ans):
+                                    infile = ans
+                                    break
+                                else:
+                                    print(Fore.RED + '[-] File %s not found' % ans)
+                            except KeyboardInterrupt:
+                                return
+                        while True:
+                            try:
+                                print('Output file path: \n')
+                                print("FileBeast {}(".format(function.__name__) + Fore.RED + alg + Fore.RESET + ")>"
+                                      , end='')
+                                ans = input()
+                                outfile = ans
+                                break
+                            except KeyboardInterrupt:
+                                return
+                        if function.__name__ == 'compress':
+                            while True:
+                                try:
+                                    ans = input('Compression level(0 to 9): ')
+                                    try:
+                                        level = int(ans)
+                                    except:
+                                        print(Fore.RED + '[-] %s is not a valid number' % ans)
+                                    if level in (range(0, 10)):
+                                        break
+                                    else:
+                                        print(Fore.RED + '[-] Compression level %s is invalid' % ans)
+                                except:
+                                    continue
+                    else:
+                        print(Fore.RED + '[-] Invalid option selected')
+                        input("Press Enter to continue...")
+                        continue
+                    if function.__name__ == 'compress':
+                        function(infile, outfile, level, alg)
+                    elif function.__name__ == 'decompress':
+                        function(infile, outfile, alg)
+                except KeyboardInterrupt:
+                    return
+        else:
+            print(Fore.RED + '[-] Error: invalid function executed')
+        return
+    return wrapper
+
+
 @Timer
 @ErrorHandler
+@menu_generater
 def encrypt(key, infilepath, outfilepath, method):
     print(Fore.LIGHTYELLOW_EX + 'Encrypting %s with %s algorithm...' % (infilepath, method))
     filesize = str(os.path.getsize(infilepath)).zfill(16)
     if method == 'AES':
         from Crypto.Cipher import AES
-        from Crypto.Hash import SHA256
         IV = Random.new().read(AES.block_size)
-        key = SHA256.new(key.encode('utf-8')).digest()
         encryptor = AES.new(key, AES.MODE_CBC, IV)
     elif method == 'DES3':
         from Crypto.Cipher import DES3
-        from Crypto.Hash import MD5
         IV = Random.new().read(DES3.block_size)
-        key = MD5.new(key.encode('utf-8')).digest()
         encryptor = DES3.new(key, DES3.MODE_CBC, IV)
     elif method == 'BLOWFISH':
         from Crypto.Cipher import Blowfish
-        from Crypto.Hash import SHA256
         IV = Random.new().read(Blowfish.block_size)
-        key = SHA256.new(key.encode('utf-8')).digest()
         encryptor = Blowfish.new(key, Blowfish.MODE_CBC, IV)
     else:
         print(Fore.RED + '[-] Invalid method selected')
@@ -119,6 +304,7 @@ def encrypt(key, infilepath, outfilepath, method):
 
 @Timer
 @ErrorHandler
+@menu_generater
 def decrypt(key, infilepath, outfilepath, method):
     print(Fore.LIGHTYELLOW_EX + 'Decrypting %s with %s algorithm...' % (infilepath, method))
     with open(infilepath, 'rb') as infile:
@@ -126,18 +312,12 @@ def decrypt(key, infilepath, outfilepath, method):
         IV = infile.read(16)
         if method == 'AES':
             from Crypto.Cipher import AES
-            from Crypto.Hash import SHA256
-            key = SHA256.new(key.encode('utf-8')).digest()
             decryptor = AES.new(key, AES.MODE_CBC, IV)
         elif method == 'DES3':
             from Crypto.Cipher import DES3
-            from Crypto.Hash import MD5
-            key = MD5.new(key.encode('utf-8')).digest()
             decryptor = DES3.new(key, DES3.MODE_CBC, IV)
         elif method == 'BLOWFISH':
             from Crypto.Cipher import Blowfish
-            from Crypto.Hash import SHA256
-            key = SHA256.new(key.encode('utf-8')).digest()
             decryptor = Blowfish.new(key, Blowfish.MODE_CBC, IV)
         else:
             print(Fore.RED + '[-] Invalid method selected')
@@ -155,6 +335,7 @@ def decrypt(key, infilepath, outfilepath, method):
 
 @Timer
 @ErrorHandler
+@menu_generater
 def compress(infilepath, outfilepath, level, method):
     print(Fore.LIGHTYELLOW_EX + 'Compressing %s with %s algorithm...' % (infilepath, method))
     if method == 'BZIP':
@@ -192,6 +373,7 @@ def compress(infilepath, outfilepath, level, method):
 
 @Timer
 @ErrorHandler
+@menu_generater
 def decompress(infilepath, outfilepath, method):
     print(Fore.LIGHTYELLOW_EX + 'Decompressing %s with %s algorithm...' % (infilepath, method))
     if method == 'BZIP':
@@ -285,11 +467,9 @@ def checkforupdate():
                     fetchfile(urls['python'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
                         if os.name in ('nt', 'dos'):
-                            subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.py'
-                                             % (sys.argv[0], latestfile), shell=True)
+                            subprocess.Popen(post_scripts['win32']['python'], shell=True)
                         elif os.name in ('linux', 'posix'):
-                            subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast.py'
-                                             % (sys.argv[0], latestfile), shell=True)
+                            subprocess.Popen(post_scripts['linux']['python'], shell=True)
                         else:
                             os.remove(sys.argv[0])
                             os.rename(latestfile, 'FileBeast.py')
@@ -302,8 +482,7 @@ def checkforupdate():
                     latestfile = 'latest.exe'
                     fetchfile(urls['win32'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
-                        subprocess.Popen('ping 127.0.0.1 -n 2 > nul && del %s && rename %s FileBeast.exe'
-                                         % (sys.argv[0], latestfile), shell=True)
+                        subprocess.Popen(post_scripts['win32']['executable'], shell=True)
                         sys.exit()
                     else:
                         print(Fore.RED + '[-] Error while updating please try again')
@@ -313,8 +492,7 @@ def checkforupdate():
                     latestfile = 'latest'
                     fetchfile(urls['linux'], latestfile)
                     if getchecksum(latestfile).encode('utf-8') == checksum:
-                        subprocess.Popen('ping 127.0.0.1 -c 2 >> /dev/null && rm -rf %s && mv %s FileBeast'
-                                         % (sys.argv[0], latestfile), shell=True)
+                        subprocess.Popen(post_scripts['linux']['executable'], shell=True)
                         sys.exit()
                     else:
                         print(Fore.RED + '[-] Error while updating please try again')
@@ -328,6 +506,27 @@ def checkforupdate():
             else:
                 print(Fore.RED + '[-] Invalid option selected')
                 continue
+
+
+def hasher(text, hashalg):
+    text = text.encode('utf-8')
+    if hashalg == 'md2':
+        from Crypto.Hash import MD2
+        return MD2.new(text).digest()
+    elif hashalg == 'md4':
+        from Crypto.Hash import MD4
+        return  MD4.new(text).digest()
+    elif hashalg == 'md5':
+        from Crypto.Hash import MD5
+        return MD5.new(text).digest()
+    elif hashalg == 'sha':
+        from Crypto.Hash import SHA
+        return SHA.new(text).digest()
+    elif hashalg == 'sha256':
+        from Crypto.Hash import SHA256
+        return SHA256.new(text).digest()
+    else:
+        print(Fore.RED + '[-] Invalid algorithm selected')
 
 
 def main_menu():
@@ -348,13 +547,13 @@ def main_menu():
                 print(' [%s] %s' % (menu.index(i), i))
             ans = input("\nFileBeast>")
             if ans == '0':
-                encrypt_menu()
+                encrypt()
             elif ans == '1':
-                decrypt_menu()
+                decrypt()
             elif ans == '2':
-                compress_menu()
+                compress()
             elif ans == '3':
-                decompress_menu()
+                decompress()
             elif ans == '4':
                 checkforupdate()
             elif ans == '5':
@@ -376,264 +575,6 @@ def main_menu():
             continue
         except KeyboardInterrupt:
             continue
-
-
-def encrypt_menu():
-    algs = ['AES', 'DES3', 'BLOWFISH']
-    alg = ''
-    infile = ''
-    outfile = ''
-    passwd = ''
-    while True:
-        try:
-            print('\nSelect encryption algorithm: \n')
-            for i in algs:
-                print(' [%s] %s' % (algs.index(i), i))
-            print(' [3] Back to Main menu\n')
-            print("FileBeast(" + Fore.RED + "Encrypt" + Fore.RESET + ")>", end='')
-            ans = input()
-            try:
-                ans = int(ans)
-            except:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            if ans > len(algs) or ans < 0:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            elif ans == 3:
-                break
-            elif algs[ans]:
-                alg = algs[ans]
-                while True:
-                    try:
-                        print('Input file path: \n')
-                        print("FileBeast Encrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        if os.path.isfile(ans):
-                            infile = ans
-                            break
-                        else:
-                            print(Fore.RED + '[-] File %s not found' % ans)
-                    except KeyboardInterrupt:
-                        return
-                while True:
-                    try:
-                        print('Output file path: \n')
-                        print("FileBeast Encrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        outfile = ans
-                        break
-                    except KeyboardInterrupt:
-                        return
-                while True:
-                    try:
-                        import getpass
-                        passwd = getpass.getpass('Password: ')
-                        break
-                    except KeyboardInterrupt:
-                        return
-            else:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            encrypt(passwd, infile, outfile, alg)
-        except KeyboardInterrupt:
-            return
-
-
-def decrypt_menu():
-    algs = ['AES', 'DES3', 'BLOWFISH']
-    alg = ''
-    infile = ''
-    outfile = ''
-    passwd = ''
-    while True:
-        try:
-            print('\nSelect encryption algorithm: \n')
-            for i in algs:
-                print(' [%s] %s' % (algs.index(i), i))
-            print(' [3] Back to Main menu\n')
-            print("FileBeast(" + Fore.RED + "Decrypt" + Fore.RESET + ")>", end='')
-            ans = input()
-            try:
-                ans = int(ans)
-            except:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            if ans > len(algs) or ans < 0:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            elif ans == 3:
-                break
-            elif algs[ans]:
-                alg = algs[ans]
-                while True:
-                    try:
-                        print('Input file path: \n')
-                        print("FileBeast Decrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        if os.path.isfile(ans):
-                            infile = ans
-                            break
-                        else:
-                            print(Fore.RED + '[-] File %s not found' % ans)
-                    except KeyboardInterrupt:
-                        return
-                while True:
-                    try:
-                        print('Output file path: \n')
-                        print("FileBeast Decrypt(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        outfile = ans
-                        break
-                    except KeyboardInterrupt:
-                        return
-                while True:
-                    try:
-                        import getpass
-                        passwd = getpass.getpass('Password: ')
-                        break
-                    except KeyboardInterrupt:
-                        return
-            else:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            decrypt(passwd, infile, outfile, alg)
-        except KeyboardInterrupt:
-            return
-
-
-def compress_menu():
-    algs = ['BZIP', 'GZIP', 'ZLIB']
-    alg = ''
-    infile = ''
-    outfile = ''
-    level = -1
-    while True:
-        try:
-            print('\nSelect compression algorithm: \n')
-            for i in algs:
-                print(' [%s] %s' % (algs.index(i), i))
-            print(' [3] Back to Main menu\n')
-            print("FileBeast(" + Fore.RED + "Compress" + Fore.RESET + ")>", end='')
-            ans = input()
-            try:
-                ans = int(ans)
-            except:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            if ans > len(algs) or ans < 0:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            elif ans == 3:
-                break
-            elif algs[ans]:
-                alg = algs[ans]
-                while True:
-                    try:
-                        print('Input file path: \n')
-                        print("FileBeast Compress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        if os.path.isfile(ans):
-                            infile = ans
-                            break
-                        else:
-                            print(Fore.RED + '[-] File %s not found' % ans)
-                    except KeyboardInterrupt:
-                        return
-                while True:
-                    try:
-                        print('Output file path: \n')
-                        print("FileBeast Compress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        outfile = ans
-                        break
-                    except KeyboardInterrupt:
-                        return
-                while True:
-                    try:
-                        ans = input('Compression level(0 to 9): ')
-                        try:
-                            level = int(ans)
-                        except:
-                            print(Fore.RED + '[-] %s is not a valid number' % ans)
-                        if level in (range(0, 10)):
-                            break
-                        else:
-                            print(Fore.RED + '[-] Compression level %s is invalid' % ans)
-                    except:
-                        continue
-            else:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            compress(infile, outfile, level, alg)
-        except KeyboardInterrupt:
-            return
-
-
-def decompress_menu():
-    algs = ['BZIP', 'GZIP', 'ZLIB']
-    alg = ''
-    infile = ''
-    outfile = ''
-    while True:
-        try:
-            print('\nSelect compression algorithm: \n')
-            for i in algs:
-                print(' [%s] %s' % (algs.index(i), i))
-            print(' [3] Back to Main menu\n')
-            print("FileBeast(" + Fore.RED + "Decompress" + Fore.RESET + ")>", end='')
-            ans = input()
-            try:
-                ans = int(ans)
-            except:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            if ans > len(algs) or ans < 0:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            elif ans == 3:
-                break
-            elif algs[ans]:
-                alg = algs[ans]
-                while True:
-                    try:
-                        print('Input file path: \n')
-                        print("FileBeast Decompress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        if os.path.isfile(ans):
-                            infile = ans
-                            break
-                        else:
-                            print(Fore.RED + '[-] File %s not found' % ans)
-                    except KeyboardInterrupt:
-                        return
-                while True:
-                    try:
-                        print('Output file path: \n')
-                        print("FileBeast Decompress(" + Fore.RED + alg + Fore.RESET + ")>", end='')
-                        ans = input()
-                        outfile = ans
-                        break
-                    except KeyboardInterrupt:
-                        return
-            else:
-                print(Fore.RED + '[-] Invalid option selected')
-                input("Press Enter to continue...")
-                continue
-            decompress(infile, outfile, alg)
-        except KeyboardInterrupt:
-            return
 
 
 @ErrorHandler
