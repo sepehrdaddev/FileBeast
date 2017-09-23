@@ -508,6 +508,7 @@ def checkforupdate():
                 continue
 
 
+@ErrorHandler
 def hasher(text, hashalg):
     text = text.encode('utf-8')
     if hashalg == 'md2':
@@ -525,6 +526,21 @@ def hasher(text, hashalg):
     elif hashalg == 'sha256':
         from Crypto.Hash import SHA256
         return SHA256.new(text).digest()
+    else:
+        print(Fore.RED + '[-] Invalid algorithm selected')
+
+
+@ErrorHandler
+def encoder(text, encodealg):
+    import base64
+    if encodealg == 'hex':
+        return base64.b16encode(text)
+    elif encodealg == 'base32':
+        return base64.b32encode(text)
+    elif encodealg == 'base64':
+        return base64.b64encode(text)
+    elif encodealg == 'base85':
+        return base64.b85encode(text)
     else:
         print(Fore.RED + '[-] Invalid algorithm selected')
 
