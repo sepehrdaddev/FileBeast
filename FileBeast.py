@@ -5,7 +5,7 @@ from colorama import *
 from Crypto import Random
 
 __author__ = 'Sepehrdad Sh'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 __banner__ = Fore.LIGHTRED_EX + ''' 	
           .                                                      .
         .n                   .                 .                  n.
@@ -67,16 +67,6 @@ def ErrorHandler(function):
     return wrapper
 
 
-def Timer(function):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = function(*args, **kwargs)
-        elapsed_time = time.time() - start_time
-        print(Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time)
-        return result
-    return wrapper
-
-
 def Pause(function):
     def wrapper(*args, **kwargs):
         result = function(*args, **kwargs)
@@ -84,6 +74,13 @@ def Pause(function):
         input()
         return result
     return wrapper
+
+
+def timer(function, *args, **kwargs):
+    start_time = time.time()
+    function(*args, **kwargs)
+    elapsed_time = time.time() - start_time
+    print(Fore.GREEN + '[+] Elapsed time = %s' % elapsed_time)
 
 
 def menu_generater(function):
@@ -149,7 +146,7 @@ def menu_generater(function):
                                 return
                         while True:
                             try:
-                                ans = input('Would you like to hash your password ? [y/n]')
+                                ans = input('Would you like to hash your password ? [y/n] ')
                                 if ans == 'y':
                                     hashalg = ['md2', 'md4', 'md5', 'sha', 'sha256']
                                     if alg == 'DES3':
@@ -182,7 +179,8 @@ def menu_generater(function):
                         print(Fore.RED + '[-] Invalid option selected')
                         input("Press Enter to continue...")
                         continue
-                    function(passwd, infile, outfile, alg)
+                    timer(function, passwd, infile, outfile, alg)
+                    deleter(infile)
                 except KeyboardInterrupt:
                     return
         elif function.__name__ in ['compress', 'decompress']:
@@ -255,9 +253,10 @@ def menu_generater(function):
                         input("Press Enter to continue...")
                         continue
                     if function.__name__ == 'compress':
-                        function(infile, outfile, level, alg)
+                        timer(function, infile, outfile, level, alg)
                     elif function.__name__ == 'decompress':
-                        function(infile, outfile, alg)
+                        timer(function, infile, outfile, alg)
+                    deleter(infile)
                 except KeyboardInterrupt:
                     return
         else:
@@ -266,7 +265,6 @@ def menu_generater(function):
     return wrapper
 
 
-@Timer
 @ErrorHandler
 @menu_generater
 def encrypt(key, infilepath, outfilepath, method):
@@ -299,10 +297,8 @@ def encrypt(key, infilepath, outfilepath, method):
                     chunk += b' ' * (16 - (len(chunk) % 16))
                 outfile.write(encryptor.encrypt(chunk))
     print(Fore.GREEN + '[+] Successfully encrypted %s' % infilepath)
-    deleter(infilepath)
 
 
-@Timer
 @ErrorHandler
 @menu_generater
 def decrypt(key, infilepath, outfilepath, method):
@@ -330,10 +326,8 @@ def decrypt(key, infilepath, outfilepath, method):
                 outfile.write(decryptor.decrypt(chunk))
             outfile.truncate(filesize)
     print(Fore.GREEN + '[+] Successfully decrypted %s' % infilepath)
-    deleter(infilepath)
 
 
-@Timer
 @ErrorHandler
 @menu_generater
 def compress(infilepath, outfilepath, level, method):
@@ -368,10 +362,8 @@ def compress(infilepath, outfilepath, level, method):
         print(Fore.RED + '[-] Invalid method selected')
         return
     print(Fore.GREEN + '[+] Successfully compressed %s' % infilepath)
-    deleter(infilepath)
 
 
-@Timer
 @ErrorHandler
 @menu_generater
 def decompress(infilepath, outfilepath, method):
@@ -406,7 +398,6 @@ def decompress(infilepath, outfilepath, method):
         print(Fore.RED + '[-] Invalid method selected')
         return
     print(Fore.GREEN + '[+] Successfully decompressed %s' % infilepath)
-    deleter(infilepath)
 
 
 @ErrorHandler
@@ -445,7 +436,6 @@ def getchecksum(filepath):
     return sha256.hexdigest()
 
 
-@Timer
 @ErrorHandler
 @Pause
 def checkforupdate():
