@@ -310,7 +310,7 @@ def deleter(infile):
     if ask("Would you like to delete original file?[y/N]") in ('y', 'Y'):
         info(f"Deleting {infile}")
         os.remove(infile)
-        success(f"[+] Successfully Deleted {infile}")
+        success(f"Successfully Deleted {infile}")
 
 
 def main(args):
