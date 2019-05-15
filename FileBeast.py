@@ -14,7 +14,7 @@
 
 
 __author__ = "Sepehrdad Sh"
-__version__ = "2.0.3"
+__version__ = "2.0.4"
 __chunksize__ = 64 * 1024
 
 
@@ -98,8 +98,8 @@ def file_select(title, exist):
         try:
             path = input(colored(f"{title} path:", "yellow"))
             if exist:
-                if not os.path.exists(path):
-                    err(f"File {path} not found")
+                if not os.path.isfile(path):
+                    err(f"Invalid file path: {path}")
                     continue
             return path
         except KeyboardInterrupt:
@@ -107,7 +107,7 @@ def file_select(title, exist):
 
 
 def path_complete(text, state):
-    return (glob.glob(text+'*')+[None])[state]
+    return (glob.glob(f"{text}*")+[None])[state]
 
 
 class Completer:
@@ -135,7 +135,7 @@ def menu_generate(elements, name, short_name):
             print()
             ans = prompt(short_name)
             if ans not in elements:
-                err("Invalid option selected")
+                err(f"Invalid option selected: {ans}")
                 pause()
                 clear()
                 continue
@@ -159,7 +159,7 @@ def encrypt(key, infilepath, outfilepath, method):
         IV = Random.new().read(Blowfish.block_size)
         encryptor = Blowfish.new(key, Blowfish.MODE_CBC, IV)
     else:
-        err("Invalid method selected")
+        err(f"Invalid method selected: {method}")
         return
     Output.write(filesize.encode("utf-8"))
     Output.write(IV)
@@ -186,7 +186,7 @@ def decrypt(key, infilepath, outfilepath, method):
     elif method == "BLOWFISH":
         decryptor = Blowfish.new(key, Blowfish.MODE_CBC, IV)
     else:
-        err("Invalid method selected")
+        err(f"Invalid method selected: {method}")
         return
     while True:
         chunk = Input.read(__chunksize__)
@@ -208,7 +208,7 @@ def compress(infilepath, outfilepath, method):
     elif method == "LZMA":
         Output = lzma.LZMAFile(outfilepath, "wb")
     else:
-        err("Invalid method selected")
+        err(f"Invalid method selected: {method}")
         return
     copyfileobj(Input, Output)
     success(f"Successfully compressed {infilepath}")
@@ -225,7 +225,7 @@ def decompress(infilepath, outfilepath, method):
     elif method == "LZMA":
         Input = lzma.LZMAFile(infilepath, "rb")
     else:
-        err("Invalid method selected")
+        err(f"Invalid method selected: {method}")
         return
     copyfileobj(Input, Output)
     success(f"Successfully decompressed {infilepath}")
@@ -238,7 +238,7 @@ def hasher(text, hashalg):
     elif hashalg == "SHA256":
         return SHA256.new(text).digest()
     else:
-        err("Invalid algorithm selected")
+        err(f"Invalid algorithm selected: {hashalg}")
 
 
 def encrypt_menu():
@@ -279,7 +279,7 @@ def compress_menu():
 
 
 def decompress_menu():
-    alg = menu_generate(["BZIP", "GZIP", "ZLIB"],
+    alg = menu_generate(["BZIP", "GZIP", "LZMA"],
                         "Compression algorithm", "Decompress")
     infile = file_select("Input", True)
     outfile = file_select("Output", False)
